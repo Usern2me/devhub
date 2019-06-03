@@ -1,7 +1,7 @@
 <p align="center">
   <img src="https://user-images.githubusercontent.com/619186/52172760-33710f00-275d-11e9-9adb-8ea4209e4453.png" height="100" /><br/>
   <span><b>DevHub</b>: <span>TweetDeck for GitHub</span><br/>
-  <span><a href="https://play.google.com/store/apps/details?id=com.devhubapp&utm_source=github_repo_link" target="_blank">Android</a>, <a href="https://itunes.apple.com/us/app/devhub-for-github/id1191864199?l=en&mt=8&utm_source=github_repo_link" target="_blank">iOS</a>, <a href="https://devhubapp.com/" target="_blank">Web</a> & <a href="https://github.com/devhubapp/devhub/releases" target="_self">Desktop</a> with <b>95%+ code sharing</b> between them<br/><i>thanks to React Native + React Native Web</i></span><br/>
+  <span><a href="https://play.google.com/store/apps/details?id=com.devhubapp&utm_source=github_repo_link" target="_blank">Android</a>, <a href="https://itunes.apple.com/us/app/devhub-for-github/id1191864199?l=en&mt=8&utm_source=github_repo_link" target="_blank">iOS</a>, <a href="https://devhubapp.com/" target="_blank">Web</a> & <a href="https://github.com/devhubapp/devhub/releases" target="_self">Desktop</a> with <b>95%+ code sharing</b> between them<br/><i>thanks to React Native + React Native Web//</i></span><br/>
   <p align="center">
     <a href="https://itunes.apple.com/us/app/devhub-for-github/id1191864199?l=en&mt=8&utm_source=github_repo_button" target="_blank"><img alt="Download on the App Store" height="50" src="https://user-images.githubusercontent.com/619186/52173137-d416fd00-2764-11e9-98c1-77607061f188.png" /></a>
     <a href="https://play.google.com/store/apps/details?id=com.devhubapp&utm_source=github_repo_button" target="_blank"><img alt="Get it on Google Play" height="50" src="https://user-images.githubusercontent.com/619186/52173136-d416fd00-2764-11e9-9599-7c098c14bb37.png" /></a>
@@ -161,22 +161,22 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 ## Keyboard shortcuts
 
-| Key       | Action                           | Implemented    | By      |
-| --------- | -------------------------------- | -------------- | ------- |
-| `Esc`     | Close currently open modal       | ✅             | [@brunolemos](https://github.com/brunolemos) |
-| `Esc`     | Exit full screen mode on desktop | ✅             | [@brunolemos](https://github.com/brunolemos) |
-| `Esc`     | Unselect currently selected item | ✅             | [@brunolemos](https://github.com/brunolemos) |
-| `n`       | Add a new column                 | ✅             | [@brunolemos](https://github.com/brunolemos) |
-| `p`       | Open preferences                 | ✅             | [@brunolemos](https://github.com/brunolemos) |
-| `1`...`9` | Go to the `nth` column           | ✅             | [@brunolemos](https://github.com/brunolemos) |
-| `0`       | Go to the last column            | ✅             | [@brunolemos](https://github.com/brunolemos) |
-| `Arrow`, `j`, `k` | Move down/up inside a column     | ✅             | [@thefrontendwizard](https://github.com/thefrontendwizard) |
-| `Arrow`, `h`, `l` | Move left/right between columns  | ✅             | [@thefrontendwizard](https://github.com/thefrontendwizard) |
-| `r`       | Mark item as read/unread         | ✅             | [@brunolemos](https://github.com/brunolemos) |
-| `s`       | Toggle save item for later       | ✅             | [@brunolemos](https://github.com/brunolemos) |
-| `Alt` + `Arrow` | Move currently selected column | ✅             | [@brunolemos](https://github.com/brunolemos) |
-| `Tab`     | Navigate between buttons and links   | ✅             | [@brunolemos](https://github.com/brunolemos) |
-| `?`       | Show keyboard shortcuts          | ✅             | [@brunolemos](https://github.com/brunolemos) |
+| Key               | Action                             | Implemented | By                                                         |
+| ----------------- | ---------------------------------- | ----------- | ---------------------------------------------------------- |
+| `Esc`             | Close currently open modal         | ✅           | [@brunolemos](https://github.com/brunolemos)               |
+| `Esc`             | Exit full screen mode on desktop   | ✅           | [@brunolemos](https://github.com/brunolemos)               |
+| `Esc`             | Unselect currently selected item   | ✅           | [@brunolemos](https://github.com/brunolemos)               |
+| `n`               | Add a new column                   | ✅           | [@brunolemos](https://github.com/brunolemos)               |
+| `p`               | Open preferences                   | ✅           | [@brunolemos](https://github.com/brunolemos)               |
+| `1`...`9`         | Go to the `nth` column             | ✅           | [@brunolemos](https://github.com/brunolemos)               |
+| `0`               | Go to the last column              | ✅           | [@brunolemos](https://github.com/brunolemos)               |
+| `Arrow`, `j`, `k` | Move down/up inside a column       | ✅           | [@thefrontendwizard](https://github.com/thefrontendwizard) |
+| `Arrow`, `h`, `l` | Move left/right between columns    | ✅           | [@thefrontendwizard](https://github.com/thefrontendwizard) |
+| `r`               | Mark item as read/unread           | ✅           | [@brunolemos](https://github.com/brunolemos)               |
+| `s`               | Toggle save item for later         | ✅           | [@brunolemos](https://github.com/brunolemos)               |
+| `Alt` + `Arrow`   | Move currently selected column     | ✅           | [@brunolemos](https://github.com/brunolemos)               |
+| `Tab`             | Navigate between buttons and links | ✅           | [@brunolemos](https://github.com/brunolemos)               |
+| `?`               | Show keyboard shortcuts            | ✅           | [@brunolemos](https://github.com/brunolemos)               |
 
 > **Tip:** To scroll horizontally on devices without horizontal scrolling (e.g. on Windows), hold `Shift` and scroll vertically
 
