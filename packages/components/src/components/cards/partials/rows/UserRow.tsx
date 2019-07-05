@@ -1,7 +1,7 @@
 import React from 'react'
 import { View } from 'react-native'
 
-import { getGitHubURLForUser, Omit } from '@devhub/core'
+import { getGitHubURLForUser } from '@devhub/core'
 import { Avatar } from '../../../common/Avatar'
 import { Link } from '../../../common/Link'
 import { cardStyles } from '../../styles'
@@ -16,8 +16,7 @@ export interface UserRowProps
   avatarUrl: string
   bold?: boolean
   // hideIcon?: boolean
-  isRead: boolean
-  showMoreItemsIndicator?: boolean
+  muted: boolean
   userLinkURL: string
   username: string
 }
@@ -29,8 +28,7 @@ export const UserRow = React.memo((props: UserRowProps) => {
     avatarUrl,
     bold,
     // hideIcon,
-    isRead,
-    showMoreItemsIndicator,
+    muted,
     userLinkURL,
     username,
     ...otherProps
@@ -44,6 +42,7 @@ export const UserRow = React.memo((props: UserRowProps) => {
           avatarUrl={avatarUrl}
           isBot={Boolean(username && username.indexOf('[bot]') >= 0)}
           linkURL={userLinkURL}
+          muted={muted}
           small
           style={cardStyles.avatar}
           username={username}
@@ -52,24 +51,22 @@ export const UserRow = React.memo((props: UserRowProps) => {
       right={
         <View style={cardRowStyles.mainContentContainer}>
           <Link
-            href={
-              showMoreItemsIndicator ? undefined : getGitHubURLForUser(username)
-            }
+            href={getGitHubURLForUser(username)}
             textProps={{
-              color:
-                isRead || showMoreItemsIndicator
-                  ? 'foregroundColorMuted60'
-                  : 'foregroundColor',
+              color: muted ? 'foregroundColorMuted60' : 'foregroundColor',
               style: [
+                cardStyles.normalText,
+                cardStyles.smallText,
                 bold && cardStyles.boldText,
-                // isRead && { fontWeight: undefined },
               ],
             }}
           >
-            {showMoreItemsIndicator ? '...' : username}
+            {username}
           </Link>
         </View>
       }
     />
   )
 })
+
+UserRow.displayName = 'UserRow'

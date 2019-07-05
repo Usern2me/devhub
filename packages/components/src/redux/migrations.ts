@@ -6,9 +6,11 @@ import {
   ColumnSubscription,
   filterRecordHasAnyForcedValue,
   getEventMetadata,
+  getOwnerAndRepo,
   GitHubEvent,
   GraphQLGitHubUser,
   guid,
+  IssueOrPullRequestColumnSubscription,
   removeUselessURLsFromResponseItem,
 } from '@devhub/core'
 import * as selectors from './selectors'
@@ -332,5 +334,60 @@ export default {
           User: true,
         }
       })
+    }),
+  12: (state: RootState) =>
+    immer(state, draft => {
+      draft.subscriptions = draft.subscriptions || {}
+      draft.subscriptions.byId = draft.subscriptions.byId || {}
+
+      const subscriptionIds = Object.keys(draft.subscriptions.byId)
+      subscriptionIds.forEach(subscriptionId => {
+        const subscription = draft.subscriptions.byId![subscriptionId]
+
+        // we only wanna change Issues & PRs columns
+        if (!(subscription && subscription.type === 'issue_or_pr')) return
+
+        const s = subscription as IssueOrPullRequestColumnSubscription
+        s.params = s.params || {}
+
+        const subscriptionParams = s.params as ({
+          repoFullName?: string
+          owners?: Partial<
+            Record<
+              string,
+              {
+                value: boolean | undefined
+                repos: Partial<Record<string, boolean>> | undefined
+              }
+            >
+          >
+        })
+
+        if (!subscriptionParams.repoFullName) return
+
+        const { owner, repo } = getOwnerAndRepo(subscriptionParams.repoFullName)
+        if (!(owner && repo)) return
+
+        subscriptionParams.owners = subscriptionParams.owners || {}
+        subscriptionParams.owners[owner] = subscriptionParams.owners[owner] || {
+          value: true,
+          repos: undefined,
+        }
+
+        subscriptionParams.owners[owner]!.repos =
+          subscriptionParams.owners[owner]!.repos || {}
+
+        subscriptionParams.owners[owner]!.repos![repo] = true
+
+        delete subscriptionParams.repoFullName
+      })
+    }),
+  13: (state: RootState) =>
+    immer(state, draft => {
+      draft.auth = draft.auth || {}
+      draft.counters = draft.counters || {}
+
+      const loginCount = (draft.auth as any).loginCount || 0
+      draft.counters.loginSuccess = loginCount || 0
     }),
 }

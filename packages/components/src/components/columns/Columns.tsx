@@ -1,8 +1,8 @@
 import _ from 'lodash'
 import React, { useCallback, useEffect, useMemo, useRef } from 'react'
-import { StyleProp, StyleSheet, ViewStyle } from 'react-native'
+import { Dimensions, StyleProp, StyleSheet, ViewStyle } from 'react-native'
 
-import { constants, Omit } from '@devhub/core'
+import { constants } from '@devhub/core'
 import { ColumnContainer } from '../../containers/ColumnContainer'
 import { useEmitter } from '../../hooks/use-emitter'
 import { useReduxState } from '../../hooks/use-redux-state'
@@ -76,7 +76,7 @@ export const Columns = React.memo((props: ColumnsProps) => {
     flatListRef.current.scrollToItem({
       animated: true,
       item: focusedColumnId,
-      viewPosition: 0.5,
+      viewPosition: 0,
     })
   }, [
     flatListRef.current,
@@ -132,16 +132,11 @@ export const Columns = React.memo((props: ColumnsProps) => {
     string
   >['onScrollToIndexFailed'] = useCallback(_onScrollToIndexFailed, [])
 
-  const flatListStyle = useMemo(
-    () => [
-      styles.flatlist,
-      sizename > '1-small' && {
-        marginHorizontal: -separatorThickSize / 2,
-      },
-      style,
-    ],
-    [style, sizename, separatorThickSize],
-  )
+  const flatListStyle = useMemo(() => [styles.flatlist, style], [
+    style,
+    sizename,
+    separatorThickSize,
+  ])
 
   /*
   const _onViewableItemsChanged: FlatListProps<
@@ -180,15 +175,16 @@ export const Columns = React.memo((props: ColumnsProps) => {
     <FlatList
       ref={flatListRef}
       key="columns-flat-list"
-      className="pagingEnabledFix"
       bounces={!swipeable}
       data={columnIds}
+      data-paging-enabled-fix
       disableVirtualization={Platform.OS === 'web'}
       getItemLayout={getItemLayout}
       horizontal
-      initialNumToRender={4}
+      initialNumToRender={Math.ceil(
+        Dimensions.get('window').width / columnWidth,
+      )}
       keyExtractor={keyExtractor}
-      maxToRenderPerBatch={1}
       onScrollToIndexFailed={onScrollToIndexFailed}
       // onViewableItemsChanged={onViewableItemsChanged}
       overScrollMode="never"
@@ -203,3 +199,5 @@ export const Columns = React.memo((props: ColumnsProps) => {
     />
   )
 })
+
+Columns.displayName = 'Columns'

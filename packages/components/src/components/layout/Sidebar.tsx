@@ -1,14 +1,16 @@
 import React, { useLayoutEffect, useRef } from 'react'
 import { Image, StyleSheet, View, ViewStyle } from 'react-native'
 
-import { getGitHubURLForUser, ModalPayload } from '@devhub/core'
+import { getGitHubURLForUser, isItemRead, ModalPayload } from '@devhub/core'
 import { useAppViewMode } from '../../hooks/use-app-view-mode'
 import { useColumn } from '../../hooks/use-column'
+import { useColumnData } from '../../hooks/use-column-data'
 import { useReduxAction } from '../../hooks/use-redux-action'
 import { useReduxState } from '../../hooks/use-redux-state'
 import { bugsnag } from '../../libs/bugsnag'
 import { emitter } from '../../libs/emitter'
 import { FlatList } from '../../libs/flatlist'
+import { Platform } from '../../libs/platform'
 import * as actions from '../../redux/actions'
 import * as selectors from '../../redux/selectors'
 import { sharedStyles } from '../../styles/shared'
@@ -16,6 +18,7 @@ import {
   columnHeaderHeight,
   columnHeaderItemContentBiggerSize,
   contentPadding,
+  mutedOpacity,
   radius,
   sidebarSize,
 } from '../../styles/variables'
@@ -23,7 +26,10 @@ import {
   ColumnHeader,
   getColumnHeaderThemeColors,
 } from '../columns/ColumnHeader'
-import { ColumnHeaderItem } from '../columns/ColumnHeaderItem'
+import {
+  ColumnHeaderItem,
+  ColumnHeaderItemProps,
+} from '../columns/ColumnHeaderItem'
 import { Avatar } from '../common/Avatar'
 import { Link } from '../common/Link'
 import { Separator } from '../common/Separator'
@@ -85,29 +91,50 @@ export const Sidebar = React.memo((props: SidebarProps) => {
   const small = sizename === '1-small'
   const large = sizename >= '3-large'
 
-  const enableBackgroundHover = true
   const showLabel = !!horizontal
   const showFixedSettingsButton = !horizontal || columnIds.length >= 4
   const highlightFocusedColumn =
     (appViewMode === 'single-column' || small) && !currentOpenedModal
 
-  const itemContainerStyle: ViewStyle = {
-    width: sidebarSize,
-    height: horizontal
-      ? sidebarSize
-      : columnHeaderItemContentBiggerSize + contentPadding * (3 / 2),
-    borderRadius: 0,
-    ...(horizontal
-      ? {
-          marginHorizontal: 1,
-          borderTopLeftRadius: radius,
-          borderTopRightRadius: radius,
-        }
-      : {
-          marginVertical: 1,
-          borderTopRightRadius: sidebarSize / 2,
-          borderBottomRightRadius: sidebarSize / 2,
-        }),
+  function getItemProps({
+    highlight,
+  }: {
+    highlight: boolean
+  }): {
+    activeOpacity: ColumnHeaderItemProps['activeOpacity']
+    enableBackgroundHover: ColumnHeaderItemProps['enableBackgroundHover']
+    enableForegroundHover: ColumnHeaderItemProps['enableForegroundHover']
+    foregroundThemeColor: ColumnHeaderItemProps['foregroundThemeColor']
+    hoverForegroundThemeColor: ColumnHeaderItemProps['hoverForegroundThemeColor']
+    itemContainerStyle: ViewStyle
+  } {
+    return {
+      activeOpacity: horizontal ? 1 : undefined,
+      enableBackgroundHover: !horizontal,
+      enableForegroundHover: horizontal,
+      foregroundThemeColor: 'foregroundColor',
+      hoverForegroundThemeColor: 'foregroundColor',
+      itemContainerStyle: {
+        width: sidebarSize,
+        height: horizontal
+          ? sidebarSize
+          : columnHeaderItemContentBiggerSize + contentPadding * (3 / 2),
+        borderRadius: 0,
+        ...(horizontal
+          ? {
+              marginHorizontal: 1,
+              borderTopLeftRadius: radius,
+              borderTopRightRadius: radius,
+              opacity: highlight ? 1 : mutedOpacity,
+            }
+          : {
+              marginVertical: 1,
+              borderTopRightRadius: sidebarSize / 2,
+              borderBottomRightRadius: sidebarSize / 2,
+              opacity: 1,
+            }),
+      },
+    }
   }
 
   const SectionSpacer = horizontal
@@ -136,12 +163,18 @@ export const Sidebar = React.memo((props: SidebarProps) => {
         {!horizontal && (
           <ColumnHeader noPadding>
             <ColumnHeaderItem
+              activeOpacity={getItemProps({ highlight: false }).activeOpacity}
               analyticsLabel={undefined}
+              foregroundThemeColor={
+                getItemProps({ highlight: false }).foregroundThemeColor
+              }
+              hoverForegroundThemeColor={
+                getItemProps({ highlight: false }).hoverForegroundThemeColor
+              }
               noPadding
               size={columnHeaderItemContentBiggerSize}
               style={[
                 styles.centerContainer,
-                itemContainerStyle,
                 {
                   width: sidebarSize,
                   height: columnHeaderHeight,
@@ -151,7 +184,12 @@ export const Sidebar = React.memo((props: SidebarProps) => {
             >
               <Link
                 analyticsLabel="sidebar_user_avatar"
-                enableBackgroundHover={enableBackgroundHover}
+                enableBackgroundHover={
+                  getItemProps({ highlight: false }).enableBackgroundHover
+                }
+                enableForegroundHover={
+                  getItemProps({ highlight: false }).enableForegroundHover
+                }
                 hoverBackgroundThemeColor={theme =>
                   getColumnHeaderThemeColors(theme.backgroundColor).hover
                 }
@@ -159,7 +197,7 @@ export const Sidebar = React.memo((props: SidebarProps) => {
                 openOnNewTab
                 style={[
                   styles.centerContainer,
-                  itemContainerStyle,
+                  getItemProps({ highlight: false }).itemContainerStyle,
                   {
                     width: sidebarSize,
                     height: columnHeaderHeight,
@@ -186,7 +224,15 @@ export const Sidebar = React.memo((props: SidebarProps) => {
             !(columnIds && columnIds.length) && !large ? (
               <>
                 <ColumnHeaderItem
+                  activeOpacity={
+                    getItemProps({ highlight: isModalOpen('ADD_COLUMN') })
+                      .activeOpacity
+                  }
                   analyticsLabel="sidebar_add"
+                  foregroundThemeColor={
+                    getItemProps({ highlight: isModalOpen('ADD_COLUMN') })
+                      .foregroundThemeColor
+                  }
                   hoverBackgroundThemeColor={
                     isModalOpen('ADD_COLUMN')
                       ? theme =>
@@ -196,7 +242,18 @@ export const Sidebar = React.memo((props: SidebarProps) => {
                           getColumnHeaderThemeColors(theme.backgroundColor)
                             .hover
                   }
-                  enableBackgroundHover={enableBackgroundHover}
+                  hoverForegroundThemeColor={
+                    getItemProps({ highlight: isModalOpen('ADD_COLUMN') })
+                      .hoverForegroundThemeColor
+                  }
+                  enableBackgroundHover={
+                    getItemProps({ highlight: isModalOpen('ADD_COLUMN') })
+                      .enableBackgroundHover
+                  }
+                  enableForegroundHover={
+                    getItemProps({ highlight: isModalOpen('ADD_COLUMN') })
+                      .enableForegroundHover
+                  }
                   forceHoverState={isModalOpen('ADD_COLUMN')}
                   iconName="plus"
                   label="add column"
@@ -206,7 +263,9 @@ export const Sidebar = React.memo((props: SidebarProps) => {
                   size={columnHeaderItemContentBiggerSize}
                   style={[
                     styles.centerContainer,
-                    itemContainerStyle,
+                    getItemProps({
+                      highlight: isModalOpen('ADD_COLUMN'),
+                    }).itemContainerStyle,
                     showLabel && styles.itemContainerStyle__withLabel,
                   ]}
                   tooltip={`Add column (${
@@ -221,7 +280,15 @@ export const Sidebar = React.memo((props: SidebarProps) => {
           ListFooterComponent={
             showFixedSettingsButton ? null : (
               <ColumnHeaderItem
+                activeOpacity={
+                  getItemProps({ highlight: isModalOpen('SETTINGS') })
+                    .activeOpacity
+                }
                 analyticsLabel="sidebar_settings"
+                foregroundThemeColor={
+                  getItemProps({ highlight: isModalOpen('SETTINGS') })
+                    .foregroundThemeColor
+                }
                 hoverBackgroundThemeColor={
                   isModalOpen('SETTINGS')
                     ? theme =>
@@ -230,7 +297,18 @@ export const Sidebar = React.memo((props: SidebarProps) => {
                     : theme =>
                         getColumnHeaderThemeColors(theme.backgroundColor).hover
                 }
-                enableBackgroundHover={enableBackgroundHover}
+                hoverForegroundThemeColor={
+                  getItemProps({ highlight: isModalOpen('SETTINGS') })
+                    .hoverForegroundThemeColor
+                }
+                enableBackgroundHover={
+                  getItemProps({ highlight: isModalOpen('SETTINGS') })
+                    .enableBackgroundHover
+                }
+                enableForegroundHover={
+                  getItemProps({ highlight: isModalOpen('SETTINGS') })
+                    .enableForegroundHover
+                }
                 forceHoverState={isModalOpen('SETTINGS')}
                 iconName="gear"
                 label="preferences"
@@ -248,7 +326,8 @@ export const Sidebar = React.memo((props: SidebarProps) => {
                 size={columnHeaderItemContentBiggerSize}
                 style={[
                   styles.centerContainer,
-                  itemContainerStyle,
+                  getItemProps({ highlight: isModalOpen('SETTINGS') })
+                    .itemContainerStyle,
                   showLabel && styles.itemContainerStyle__withLabel,
                 ]}
                 tooltip={`Preferences (${
@@ -287,13 +366,15 @@ export const Sidebar = React.memo((props: SidebarProps) => {
           removeClippedSubviews={false}
           renderItem={({ item: columnId }) => (
             <SidebarColumnItem
+              {...getItemProps({
+                highlight:
+                  highlightFocusedColumn && columnId === focusedColumnId,
+              })}
               closeAllModals={closeAllModals}
               columnId={columnId}
               currentOpenedModal={currentOpenedModal}
-              enableBackgroundHover={enableBackgroundHover}
               highlight={highlightFocusedColumn && columnId === focusedColumnId}
               horizontal={horizontal}
-              itemContainerStyle={itemContainerStyle}
               showLabel={showLabel}
               small={small}
             />
@@ -313,19 +394,40 @@ export const Sidebar = React.memo((props: SidebarProps) => {
             {!!large && !shouldRenderFAB({ sizename }) && (
               <>
                 <ColumnHeaderItem
+                  activeOpacity={
+                    getItemProps({ highlight: isModalOpen('ADD_COLUMN') })
+                      .activeOpacity
+                  }
                   analyticsLabel="sidebar_add"
+                  enableBackgroundHover={
+                    getItemProps({ highlight: isModalOpen('ADD_COLUMN') })
+                      .enableBackgroundHover
+                  }
+                  enableForegroundHover={
+                    getItemProps({ highlight: isModalOpen('ADD_COLUMN') })
+                      .enableForegroundHover
+                  }
+                  forceHoverState={isModalOpen('ADD_COLUMN')}
+                  foregroundThemeColor={
+                    getItemProps({ highlight: isModalOpen('ADD_COLUMN') })
+                      .foregroundThemeColor
+                  }
                   hoverBackgroundThemeColor={theme =>
                     getColumnHeaderThemeColors(theme.backgroundColor).hover
                   }
-                  enableBackgroundHover={enableBackgroundHover}
-                  forceHoverState={isModalOpen('ADD_COLUMN')}
+                  hoverForegroundThemeColor={
+                    getItemProps({ highlight: isModalOpen('ADD_COLUMN') })
+                      .hoverForegroundThemeColor
+                  }
                   iconName="plus"
                   label="add column"
                   noPadding
                   onPress={() => replaceModal({ name: 'ADD_COLUMN' })}
                   style={[
                     styles.centerContainer,
-                    itemContainerStyle,
+                    getItemProps({
+                      highlight: isModalOpen('ADD_COLUMN'),
+                    }).itemContainerStyle,
                     showLabel && styles.itemContainerStyle__withLabel,
                   ]}
                   showLabel={showLabel}
@@ -347,6 +449,9 @@ export const Sidebar = React.memo((props: SidebarProps) => {
 
         {showFixedSettingsButton && (
           <ColumnHeaderItem
+            activeOpacity={
+              getItemProps({ highlight: isModalOpen('SETTINGS') }).activeOpacity
+            }
             analyticsLabel="sidebar_settings"
             hoverBackgroundThemeColor={
               isModalOpen('SETTINGS')
@@ -355,8 +460,23 @@ export const Sidebar = React.memo((props: SidebarProps) => {
                 : theme =>
                     getColumnHeaderThemeColors(theme.backgroundColor).hover
             }
-            enableBackgroundHover={enableBackgroundHover}
+            enableBackgroundHover={
+              getItemProps({ highlight: isModalOpen('SETTINGS') })
+                .enableBackgroundHover
+            }
+            enableForegroundHover={
+              getItemProps({ highlight: isModalOpen('SETTINGS') })
+                .enableForegroundHover
+            }
             forceHoverState={isModalOpen('SETTINGS')}
+            foregroundThemeColor={
+              getItemProps({ highlight: isModalOpen('SETTINGS') })
+                .foregroundThemeColor
+            }
+            hoverForegroundThemeColor={
+              getItemProps({ highlight: isModalOpen('SETTINGS') })
+                .hoverForegroundThemeColor
+            }
             iconName="gear"
             label="preferences"
             noPadding
@@ -373,7 +493,8 @@ export const Sidebar = React.memo((props: SidebarProps) => {
             size={columnHeaderItemContentBiggerSize}
             style={[
               styles.centerContainer,
-              itemContainerStyle,
+              getItemProps({ highlight: isModalOpen('SETTINGS') })
+                .itemContainerStyle,
               showLabel && styles.itemContainerStyle__withLabel,
             ]}
             tooltip={`Preferences (${
@@ -387,25 +508,39 @@ export const Sidebar = React.memo((props: SidebarProps) => {
             {/* <Separator horizontal={!horizontal} /> */}
 
             <ColumnHeaderItem
+              activeOpacity={getItemProps({ highlight: false }).activeOpacity}
               analyticsLabel={undefined}
+              foregroundThemeColor={
+                getItemProps({ highlight: false }).foregroundThemeColor
+              }
+              hoverForegroundThemeColor={
+                getItemProps({ highlight: false }).hoverForegroundThemeColor
+              }
               noPadding
               size={columnHeaderItemContentBiggerSize}
               style={[
                 styles.centerContainer,
-                itemContainerStyle,
                 showLabel && styles.itemContainerStyle__withLabel,
               ]}
               tooltip={undefined}
             >
               <Link
                 analyticsLabel="sidebar_devhub_logo"
-                enableBackgroundHover={enableBackgroundHover}
+                enableBackgroundHover={
+                  getItemProps({ highlight: false }).enableBackgroundHover
+                }
+                enableForegroundHover={
+                  getItemProps({ highlight: false }).enableForegroundHover
+                }
                 hoverBackgroundThemeColor={theme =>
                   getColumnHeaderThemeColors(theme.backgroundColor).hover
                 }
                 href="https://github.com/devhubapp/devhub"
                 openOnNewTab
-                style={[styles.centerContainer, itemContainerStyle]}
+                style={[
+                  styles.centerContainer,
+                  getItemProps({ highlight: false }).itemContainerStyle,
+                ]}
                 tooltip="Open DevHub on GitHub"
               >
                 <Image
@@ -431,24 +566,34 @@ export const Sidebar = React.memo((props: SidebarProps) => {
   )
 })
 
+Sidebar.displayName = 'Sidebar'
+
 const SidebarColumnItem = React.memo(
   (props: {
+    activeOpacity?: ColumnHeaderItemProps['activeOpacity']
     closeAllModals: () => void
     columnId: string
     currentOpenedModal: ModalPayload | undefined
-    enableBackgroundHover: boolean
+    enableBackgroundHover: ColumnHeaderItemProps['enableBackgroundHover']
+    enableForegroundHover: ColumnHeaderItemProps['enableForegroundHover']
+    foregroundThemeColor?: ColumnHeaderItemProps['foregroundThemeColor']
     highlight: boolean
     horizontal: boolean
+    hoverForegroundThemeColor: ColumnHeaderItemProps['hoverForegroundThemeColor']
     itemContainerStyle: ViewStyle
-    showLabel: boolean
+    showLabel: ColumnHeaderItemProps['showLabel']
     small: boolean | undefined
   }) => {
     const {
+      activeOpacity,
       closeAllModals,
       columnId,
       currentOpenedModal,
       enableBackgroundHover,
+      enableForegroundHover,
+      foregroundThemeColor,
       highlight,
+      hoverForegroundThemeColor,
       itemContainerStyle,
       showLabel,
       small,
@@ -456,27 +601,40 @@ const SidebarColumnItem = React.memo(
 
     const { column, columnIndex, headerDetails } = useColumn(columnId)
 
+    const { filteredItems } = useColumnData((column && column.id) || '', {
+      mergeSimilar: false,
+    })
+
     if (!(column && columnIndex >= 0 && headerDetails)) return null
 
-    const label = `${headerDetails.title || ''}`.toLowerCase()
+    const hasUnreadItems = filteredItems.some(item => !isItemRead(item))
+
+    const label = `${headerDetails.title ||
+      headerDetails.subtitle ||
+      ''}`.toLowerCase()
 
     return (
       <ColumnHeaderItem
         key={`sidebar-column-${column.id}`}
+        activeOpacity={activeOpacity}
         analyticsLabel="sidebar_column"
         avatarProps={{
           ...headerDetails.avatarProps,
           disableLink: true,
         }}
+        enableBackgroundHover={enableBackgroundHover}
+        enableForegroundHover={enableForegroundHover}
         forceHoverState={highlight}
+        foregroundThemeColor={foregroundThemeColor}
         hoverBackgroundThemeColor={
           highlight
             ? theme =>
                 getColumnHeaderThemeColors(theme.backgroundColor).selected
             : theme => getColumnHeaderThemeColors(theme.backgroundColor).hover
         }
-        enableBackgroundHover={enableBackgroundHover || highlight}
+        hoverForegroundThemeColor={hoverForegroundThemeColor}
         iconName={headerDetails.icon}
+        isUnread={hasUnreadItems}
         label={label}
         noPadding
         onPress={() => {
@@ -499,7 +657,14 @@ const SidebarColumnItem = React.memo(
         tooltip={`${headerDetails.title} (${headerDetails.subtitle})`
           .toLowerCase()
           .trim()}
+        unreadIndicatorBackgroundThemeColor={
+          Platform.OS === 'web' && column.type === 'notifications'
+            ? 'red'
+            : undefined
+        }
       />
     )
   },
 )
+
+SidebarColumnItem.displayName = 'SidebarColumnItem'

@@ -1,6 +1,5 @@
 import React from 'react'
 
-import { Omit } from '@devhub/core'
 import { useReduxAction } from '../../hooks/use-redux-action'
 import * as actions from '../../redux/actions'
 import { contentPadding } from '../../styles/variables'
@@ -8,19 +7,20 @@ import {
   ColumnHeaderItem,
   ColumnHeaderItemProps,
 } from '../columns/ColumnHeaderItem'
-import { useTheme } from '../context/ThemeContext'
 import { keyboardShortcutsById } from '../modals/KeyboardShortcutsModal'
 
 export interface BookmarkButtonProps
   extends Omit<ColumnHeaderItemProps, 'tooltip'> {
   isSaved: boolean
-  itemIds: Array<string | number>
+  itemIds: string | number | Array<string | number>
 }
 
-export function BookmarkButton(props: BookmarkButtonProps) {
-  const { isSaved, itemIds, ...otherProps } = props
+export const BookmarkButton = React.memo((props: BookmarkButtonProps) => {
+  const { isSaved, itemIds: _itemIds, ...otherProps } = props
 
-  const theme = useTheme()
+  const itemIds = Array.isArray(_itemIds)
+    ? _itemIds.filter(Boolean)
+    : [_itemIds].filter(Boolean)
 
   const saveItemsForLater = useReduxAction(actions.saveItemsForLater)
 
@@ -30,9 +30,10 @@ export function BookmarkButton(props: BookmarkButtonProps) {
       enableBackgroundHover={false}
       enableForegroundHover={!isSaved}
       fixedIconSize
-      foregroundColor={
-        isSaved ? theme.primaryBackgroundColor : theme.foregroundColorMuted60
+      foregroundThemeColor={
+        isSaved ? 'primaryBackgroundColor' : 'foregroundColorMuted25'
       }
+      hoverForegroundThemeColor="foregroundColor"
       iconName="bookmark"
       noPadding
       onPress={() => saveItemsForLater({ itemIds, save: !isSaved })}
@@ -51,4 +52,6 @@ export function BookmarkButton(props: BookmarkButtonProps) {
       ]}
     />
   )
-}
+})
+
+BookmarkButton.displayName = 'BookmarkButton'

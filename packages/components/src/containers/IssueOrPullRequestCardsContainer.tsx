@@ -4,9 +4,8 @@ import {
   EnhancedGitHubIssueOrPullRequest,
   getDefaultPaginationPerPage,
   getOlderIssueOrPullRequestDate,
-  getOwnerAndRepo,
+  getSubscriptionOwnerOrOrg,
   IssueOrPullRequestColumnSubscription,
-  Omit,
 } from '@devhub/core'
 import { View } from 'react-native'
 import { EmptyCards } from '../components/cards/EmptyCards'
@@ -39,7 +38,7 @@ export type IssueOrPullRequestCardsContainerProps = Omit<
 
 export const IssueOrPullRequestCardsContainer = React.memo(
   (props: IssueOrPullRequestCardsContainerProps) => {
-    const { cardViewMode, column, ...otherProps } = props
+    const { cardViewMode, column, repoIsKnown, ...otherProps } = props
 
     const appToken = useReduxState(selectors.appTokenSelector)
     const githubAppToken = useReduxState(selectors.githubAppTokenSelector)
@@ -59,13 +58,7 @@ export const IssueOrPullRequestCardsContainer = React.memo(
       .toLowerCase()
       .includes('not found')
 
-    const subscriptionOwnerOrOrg =
-      getOwnerAndRepo(
-        (mainSubscription &&
-          mainSubscription.params &&
-          mainSubscription.params.repoFullName) ||
-          '',
-      ).owner || undefined
+    const subscriptionOwnerOrOrg = getSubscriptionOwnerOrOrg(mainSubscription)
 
     const ownerResponse = useGitHubAPI(
       octokit.users.getByUsername,
@@ -88,9 +81,9 @@ export const IssueOrPullRequestCardsContainer = React.memo(
       actions.fetchColumnSubscriptionRequest,
     )
 
-    const { allItems, filteredItems } = useColumnData<
+    const { allItems, filteredItems, loadState } = useColumnData<
       EnhancedGitHubIssueOrPullRequest
-    >(column.id, cardViewMode !== 'compact')
+    >(column.id, { mergeSimilar: cardViewMode !== 'compact' })
 
     const clearedAt = column.filters && column.filters.clearedAt
     const olderDate = getOlderIssueOrPullRequestDate(allItems)
@@ -140,8 +133,7 @@ export const IssueOrPullRequestCardsContainer = React.memo(
       if (ownerResponse.loadingState === 'loading') {
         return (
           <EmptyCards
-            clearedAt={undefined}
-            columnId={column.id}
+            column={column}
             fetchNextPage={undefined}
             loadState="loading"
             refresh={undefined}
@@ -241,13 +233,13 @@ export const IssueOrPullRequestCardsContainer = React.memo(
         fetchNextPage={canFetchMore ? fetchNextPage : undefined}
         items={filteredItems}
         lastFetchedAt={mainSubscription.data.lastFetchedAt}
-        loadState={
-          installationsLoadState === 'loading' && !filteredItems.length
-            ? 'loading_first'
-            : mainSubscription.data.loadState || 'not_loaded'
-        }
+        loadState={loadState}
         refresh={refresh}
+        repoIsKnown={repoIsKnown}
       />
     )
   },
 )
+
+IssueOrPullRequestCardsContainer.displayName =
+  'IssueOrPullRequestCardsContainer'

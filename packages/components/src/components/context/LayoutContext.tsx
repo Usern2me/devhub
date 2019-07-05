@@ -1,5 +1,6 @@
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext } from 'react'
 import { Dimensions } from 'react-native'
+import { useDimensions } from '../../hooks/use-dimensions'
 
 export const APP_LAYOUT_BREAKPOINTS = {
   SMALL: 420,
@@ -28,30 +29,26 @@ export interface AppLayoutProviderState {
 export const AppLayoutContext = React.createContext<AppLayoutProviderState>(
   getLayoutConsumerState(),
 )
+AppLayoutContext.displayName = 'AppLayoutContext'
 
 export function AppLayoutProvider(props: AppLayoutProviderProps) {
-  const [state, setState] = useState(() => getLayoutConsumerState())
-
-  useEffect(() => {
-    const handler = () => {
-      setState(getLayoutConsumerState())
-    }
-
-    Dimensions.addEventListener('change', handler)
-    return () => Dimensions.removeEventListener('change', handler)
-  }, [])
+  const dimensions = useDimensions()
 
   return (
-    <AppLayoutContext.Provider value={state}>
+    <AppLayoutContext.Provider value={getLayoutConsumerState(dimensions)}>
       {props.children}
     </AppLayoutContext.Provider>
   )
 }
 
 export const AppLayoutConsumer = AppLayoutContext.Consumer
+;(AppLayoutConsumer as any).displayName = 'AppLayoutConsumer'
 
-export function getLayoutConsumerState(): AppLayoutProviderState {
-  const { width, height } = Dimensions.get('window')
+export function getLayoutConsumerState(dimensions?: {
+  width: number
+  height: number
+}): AppLayoutProviderState {
+  const { width, height } = dimensions || Dimensions.get('window')
 
   const sizename: AppLayoutProviderState['sizename'] =
     width <= APP_LAYOUT_BREAKPOINTS.SMALL

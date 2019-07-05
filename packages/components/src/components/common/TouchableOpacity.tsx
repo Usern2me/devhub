@@ -1,7 +1,6 @@
 import React from 'react'
 import { TouchableOpacity as TouchableOpacityOriginal } from 'react-native'
 
-import { Omit } from '@devhub/core'
 import { Touchable, TouchableProps } from './Touchable'
 
 export interface TouchableOpacityProps
@@ -21,5 +20,7 @@ export const TouchableOpacity = React.forwardRef(
     )
   },
 )
+
+TouchableOpacity.displayName = 'TouchableOpacity'
 
 export type TouchableOpacity = TouchableOpacityOriginal

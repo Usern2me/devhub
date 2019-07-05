@@ -5,7 +5,6 @@ import {
   getDefaultPaginationPerPage,
   getOlderNotificationDate,
   NotificationColumnSubscription,
-  Omit,
 } from '@devhub/core'
 import {
   NotificationCards,
@@ -30,7 +29,7 @@ export type NotificationCardsContainerProps = Omit<
 
 export const NotificationCardsContainer = React.memo(
   (props: NotificationCardsContainerProps) => {
-    const { cardViewMode, column, ...otherProps } = props
+    const { cardViewMode, column, repoIsKnown, ...otherProps } = props
 
     const appToken = useReduxState(selectors.appTokenSelector)
     const githubOAuthToken = useReduxState(selectors.githubOAuthTokenSelector)
@@ -46,17 +45,13 @@ export const NotificationCardsContainer = React.memo(
 
     const data = (mainSubscription && mainSubscription.data) || {}
 
-    const installationsLoadState = useReduxState(
-      selectors.installationsLoadStateSelector,
-    )
-
     const fetchColumnSubscriptionRequest = useReduxAction(
       actions.fetchColumnSubscriptionRequest,
     )
 
-    const { allItems, filteredItems } = useColumnData<
+    const { allItems, filteredItems, loadState } = useColumnData<
       EnhancedGitHubNotification
-    >(column.id, cardViewMode !== 'compact')
+    >(column.id, { mergeSimilar: cardViewMode !== 'compact' })
 
     const clearedAt = column.filters && column.filters.clearedAt
     const olderDate = getOlderNotificationDate(allItems)
@@ -117,13 +112,12 @@ export const NotificationCardsContainer = React.memo(
         fetchNextPage={canFetchMore ? fetchNextPage : undefined}
         items={filteredItems}
         lastFetchedAt={mainSubscription.data.lastFetchedAt}
-        loadState={
-          installationsLoadState === 'loading' && !filteredItems.length
-            ? 'loading_first'
-            : mainSubscription.data.loadState || 'not_loaded'
-        }
+        loadState={loadState}
         refresh={refresh}
+        repoIsKnown={repoIsKnown}
       />
     )
   },
 )
+
+NotificationCardsContainer.displayName = 'NotificationCardsContainer'

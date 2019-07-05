@@ -1,7 +1,6 @@
 import React from 'react'
 import { StyleSheet, View } from 'react-native'
 
-import { Omit } from '@devhub/core'
 import { useReduxAction } from '../../../../hooks/use-redux-action'
 import { useReduxState } from '../../../../hooks/use-redux-state'
 import { analytics } from '../../../../libs/analytics'
@@ -22,7 +21,6 @@ export interface PrivateNotificationRowProps
     BaseRowProps,
     'containerStyle' | 'contentContainerStyle' | 'left' | 'right'
   > {
-  isRead?: boolean
   ownerId?: number | string | undefined
   repoId?: number | string | undefined
 }
@@ -144,3 +142,5 @@ export const PrivateNotificationRow = React.memo(
     )
   },
 )
+
+PrivateNotificationRow.displayName = 'PrivateNotificationRow'

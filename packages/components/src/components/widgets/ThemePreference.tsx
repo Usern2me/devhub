@@ -8,7 +8,6 @@ import * as actions from '../../redux/actions'
 import * as selectors from '../../redux/selectors'
 import { sharedStyles } from '../../styles/shared'
 import { darkThemesArr, lightThemesArr } from '../../styles/themes'
-import { defaultTheme } from '../../styles/utils'
 import { contentPadding } from '../../styles/variables'
 import { Checkbox } from '../common/Checkbox'
 import { H3 } from '../common/H3'
@@ -18,12 +17,10 @@ import { Switch } from '../common/Switch'
 import { useTheme } from '../context/ThemeContext'
 
 export const ThemePreference = React.memo(() => {
-  const lastThemeId = useRef(defaultTheme.id)
+  const appTheme = useTheme()
 
-  useTheme(theme => {
-    if (theme.id === 'auto') return
-    lastThemeId.current = theme.id
-  })
+  const lastThemeId = useRef(appTheme.id)
+  if (appTheme.id !== 'auto') lastThemeId.current = appTheme.id
 
   const currentThemeId = useReduxState(selectors.themePairSelector).id
 
@@ -61,7 +58,7 @@ export const ThemePreference = React.memo(() => {
         label={theme.displayName}
         onChange={checked => {
           if (
-            checked === true ||
+            typeof checked === 'boolean' ||
             (currentThemeId === 'auto' && checked === null)
           ) {
             if (currentThemeId === 'auto' && theme.isDark === isNight()) {
@@ -123,3 +120,5 @@ export const ThemePreference = React.memo(() => {
     </View>
   )
 })
+
+ThemePreference.displayName = 'ThemePreference'

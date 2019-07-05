@@ -1,4 +1,5 @@
 import immer from 'immer'
+import _ from 'lodash'
 
 import { BannerMessage, constants } from '@devhub/core'
 import { REHYDRATE } from 'redux-persist'
@@ -11,14 +12,15 @@ export interface State {
 const initialState: State = {
   banners: [
     {
-      id: 'join_our_slack',
+      id: 'new_layout_mode',
       message:
-        'Join our brand new Slack Community and get exclusive access to new features in beta :rocket:',
-      href: constants.SLACK_INVITE_LINK,
+        ':sparkles: New! You can now switch between "Multi-column" and "Single-column" layouts! Tap to try it out.',
+      href: `${constants.APP_DEEP_LINK_URLS.redux_action}/TOGGLE_APP_VIEW_MODE`,
       openOnNewTab: true,
-      minLoginCount: 3,
+      disableOnSmallScreens: true,
+      minLoginCount: undefined,
       closedAt: undefined,
-      createdAt: '2019-05-02T08:00:00.000Z',
+      createdAt: '2019-06-21T00:00:00.000Z',
     },
   ],
 }
@@ -31,24 +33,28 @@ export const appReducer: Reducer<State> = (state = initialState, action) => {
 
       return {
         ...app,
-        banners: ((app && app.banners) || []).map(banner => {
-          if (!(banner && banner.id)) return banner
+        banners: _.uniqBy(
+          ((app && app.banners) || [])
+            .concat(initialState.banners)
+            .map(banner => {
+              if (!(banner && banner.id)) return banner
+              if (banner.id === 'join_our_slack') return
 
-          const updatedBanner = initialState.banners.find(
-            b => b.id === banner.id,
-          )
-          if (updatedBanner) {
-            return {
-              ...banner,
-              href: updatedBanner.href,
-              message: updatedBanner.message,
-              minLoginCount: updatedBanner.minLoginCount,
-              openOnNewTab: updatedBanner.openOnNewTab,
-            }
-          }
+              const updatedBanner = initialState.banners.find(
+                b => b.id === banner.id,
+              )
+              if (updatedBanner) {
+                return {
+                  ...banner,
+                  ..._.omit(updatedBanner, ['closedAt', 'createdAt']),
+                }
+              }
 
-          return banner
-        }),
+              return banner
+            })
+            .filter(Boolean) as State['banners'],
+          'id',
+        ),
       }
     }
 

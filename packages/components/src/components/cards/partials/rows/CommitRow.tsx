@@ -5,7 +5,6 @@ import {
   getCommentIdFromUrl,
   getGitHubSearchURL,
   getGitHubURLForUser,
-  Omit,
   trimNewLinesAndSpaces,
   tryGetUsernameFromGitHubEmail,
 } from '@devhub/core'
@@ -28,13 +27,14 @@ export interface CommitRowProps
   authorEmail: string
   authorName: string
   authorUsername?: string
+  big: boolean
   bold?: boolean
   hideIcon?: boolean
   isPrivate: boolean
-  isRead: boolean
   latestCommentUrl?: string
   message: string
-  showMoreItemsIndicator?: boolean
+  muted: boolean
+  numberOfLines?: number
   url: string
 }
 
@@ -45,13 +45,14 @@ export const CommitRow = React.memo((props: CommitRowProps) => {
     authorEmail,
     authorName,
     authorUsername: _authorUsername,
+    big,
     bold,
     hideIcon,
     isPrivate,
-    isRead,
     latestCommentUrl,
     message: _message,
-    showMoreItemsIndicator,
+    muted,
+    numberOfLines = 1,
     url,
     ...otherProps
   } = props
@@ -78,6 +79,7 @@ export const CommitRow = React.memo((props: CommitRowProps) => {
             isBot={Boolean(
               authorUsername && authorUsername.indexOf('[bot]') >= 0,
             )}
+            muted={muted}
             small
             style={cardStyles.avatar}
             username={authorUsername}
@@ -98,32 +100,24 @@ export const CommitRow = React.memo((props: CommitRowProps) => {
         <View style={cardRowStyles.mainContentContainer}>
           <Link
             enableTextWrapper
-            href={
-              showMoreItemsIndicator
-                ? undefined
-                : fixURL(url, {
-                    commentId:
-                      (latestCommentUrl &&
-                        getCommentIdFromUrl(latestCommentUrl)) ||
-                      undefined,
-                  })
-            }
+            href={fixURL(url, {
+              commentId:
+                (latestCommentUrl && getCommentIdFromUrl(latestCommentUrl)) ||
+                undefined,
+            })}
             style={sharedStyles.flex}
             textProps={{
-              color: isRead ? 'foregroundColorMuted60' : 'foregroundColor',
-              // color: 'foregroundColor',
-              numberOfLines: 1,
+              color: muted ? 'foregroundColorMuted60' : 'foregroundColor',
+              numberOfLines,
               style: [
                 cardStyles.normalText,
-                cardStyles.smallText,
+                !big && cardStyles.smallText,
                 bold && cardStyles.boldText,
-                // isRead && { fontWeight: undefined },
               ],
             }}
             tooltip={`${_message}${byText ? `\n\n${byText}` : ''}`}
           >
             <>
-              {' '}
               {!hideIcon && (
                 <>
                   <ThemedIcon
@@ -133,13 +127,13 @@ export const CommitRow = React.memo((props: CommitRowProps) => {
                   />{' '}
                 </>
               )}
-              {showMoreItemsIndicator ? '' : message}
+              {message}
               {Boolean(byText) && (
                 <ThemedText
                   color="foregroundColorMuted60"
                   style={[cardStyles.normalText, cardStyles.smallText]}
                 >
-                  {showMoreItemsIndicator ? '...' : ` by ${byText}`}
+                  {` by ${byText}`}
                 </ThemedText>
               )}
             </>
@@ -149,3 +143,5 @@ export const CommitRow = React.memo((props: CommitRowProps) => {
     />
   )
 })
+
+CommitRow.displayName = 'CommitRow'

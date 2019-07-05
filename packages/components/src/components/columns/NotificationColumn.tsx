@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { getColumnHeaderDetails, Omit } from '@devhub/core'
+import { getColumnHeaderDetails } from '@devhub/core'
 import {
   NotificationCardsContainer,
   NotificationCardsContainerProps,
@@ -10,7 +10,7 @@ import { ColumnRenderer } from './ColumnRenderer'
 export interface NotificationColumnProps
   extends Omit<
     NotificationCardsContainerProps,
-    'cardViewMode' | 'enableCompactLabels' | 'repoIsKnown'
+    'cardViewMode' | 'disableItemFocus' | 'enableCompactLabels' | 'repoIsKnown'
   > {
   columnIndex: number
   disableColumnOptions?: boolean
@@ -38,6 +38,7 @@ export const NotificationColumn = React.memo(
           headerDetails.avatarProps && headerDetails.avatarProps.username
         }
         column={column}
+        columnIndex={columnIndex}
         disableColumnOptions={disableColumnOptions}
         icon={headerDetails.icon}
         owner={headerDetails.owner}
@@ -47,12 +48,13 @@ export const NotificationColumn = React.memo(
         subtitle={headerDetails.subtitle}
         title={headerDetails.title}
       >
-        {({ cardViewMode, enableCompactLabels }) => (
+        {({ cardViewMode, disableItemFocus, enableCompactLabels }) => (
           <NotificationCardsContainer
             {...props}
             key={`notification-cards-container-${column.id}`}
             cardViewMode={cardViewMode}
             columnIndex={columnIndex}
+            disableItemFocus={disableItemFocus}
             enableCompactLabels={enableCompactLabels}
             repoIsKnown={headerDetails.repoIsKnown}
           />
@@ -61,3 +63,5 @@ export const NotificationColumn = React.memo(
     )
   },
 )
+
+NotificationColumn.displayName = 'NotificationColumn'

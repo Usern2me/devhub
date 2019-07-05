@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useRef } from 'react'
 import {
+  InteractionManager,
   TouchableOpacity,
   TouchableOpacityProps,
   TouchableWithoutFeedbackProps,
@@ -58,18 +59,21 @@ export const Touchable = React.forwardRef(
       if (!node) return
 
       node.title = tooltip || ''
+      if (!tooltip && node.removeAttribute) node.removeAttribute('title')
     }, [touchableRef.current, tooltip])
 
     const onPress: typeof _onPress =
       analyticsAction || analyticsCategory || analyticsLabel || analyticsValue
         ? e => {
-            analytics.trackEvent(
-              analyticsCategory || 'button',
-              analyticsAction || 'press',
-              analyticsLabel,
-              analyticsValue,
-            )
-            if (_onPress) _onPress(e)
+            InteractionManager.runAfterInteractions(() => {
+              analytics.trackEvent(
+                analyticsCategory || 'button',
+                analyticsAction || 'press',
+                analyticsLabel,
+                analyticsValue,
+              )
+              if (_onPress) _onPress(e)
+            })
           }
         : _onPress
 
@@ -84,19 +88,22 @@ export const Touchable = React.forwardRef(
     return (
       <TouchableComponent
         {...props}
-        className="touchable"
         ref={touchableRef}
+        data-touchable
+        data-touchable-disabled={!!props.disabled}
+        data-touchable-onpress={!!onPress}
         onLongPress={onLongPress}
         onPress={onPress}
         style={[
           props.style,
           props.disabled && { opacity: 0.5 },
-          !onPress && ({ cursor: undefined } as any),
           selectable === true && ({ userSelect: undefined } as any),
         ]}
       />
     )
   },
 )
+
+Touchable.displayName = 'Touchable'
 
 export type Touchable = TouchableOpacity

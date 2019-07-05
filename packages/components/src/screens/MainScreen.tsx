@@ -7,7 +7,6 @@ import url from 'url'
 import { AppBannerMessage } from '../components/banners/AppBannerMessage'
 import { ColumnSeparator } from '../components/columns/ColumnSeparator'
 import { ColumnsRenderer } from '../components/columns/ColumnsRenderer'
-import { ColumnSwitcher } from '../components/columns/ColumnSwitcher'
 import { ConditionalWrap } from '../components/common/ConditionalWrap'
 import { Screen } from '../components/common/Screen'
 import { Separator } from '../components/common/Separator'
@@ -410,10 +409,12 @@ export const MainScreen = React.memo(() => {
           />
 
           <ColumnsRenderer key="columns-renderer" />
-          <ColumnSwitcher key="column-switcher-renderer" />
+          {/* <ColumnArrowSwitcher key="column-arrow-switcher-renderer" /> */}
           <FABRenderer key="fab-renderer" />
         </ConditionalWrap>
       </View>
     </Screen>
   )
 })
+
+MainScreen.displayName = 'MainScreen'

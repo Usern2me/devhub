@@ -1,10 +1,10 @@
 import Octokit, { SearchIssuesAndPullRequestsParams } from '@octokit/rest'
+import _ from 'lodash'
 
 import {
   getGitHubIssueSearchQuery,
   GitHubActivityType,
   IssueOrPullRequestColumnSubscription,
-  Omit,
 } from '@devhub/core'
 
 export const octokit = new Octokit()
@@ -185,9 +185,7 @@ export async function getIssuesOrPullRequests<
       const p: SearchIssuesAndPullRequestsParams & {
         headers?: Record<string, string>
       } = {
-        order: 'desc',
-        sort: 'updated',
-        ..._requestParams,
+        ..._.omit(_requestParams, Object.keys(subscriptionParams)),
         q: getGitHubIssueSearchQuery(subscriptionParams),
       }
 

@@ -21,7 +21,6 @@ import {
   GitHubStateType,
   GitHubWatchEvent,
 } from './github'
-import { Omit } from './typescript'
 
 type octokit = InstanceType<typeof Octokit>
 
@@ -173,12 +172,14 @@ export type ActivityColumnSubscription = {
 export interface IssueOrPullRequestColumnSubscription {
   id: string
   type: IssueOrPullRequestColumn['type']
-  subtype: 'ISSUES' | 'PULLS'
+  subtype: 'ISSUES' | 'PULLS' | undefined
   params: {
-    repoFullName?: string
-    subjectType: GitHubIssueOrPullRequestSubjectType
-    state?: ColumnFilters['state']
-    draft?: ColumnFilters['draft']
+    owners?: IssueOrPullRequestColumnFilters['owners']
+    involves?: IssueOrPullRequestColumnFilters['involves']
+    subjectType: GitHubIssueOrPullRequestSubjectType | undefined
+    state?: IssueOrPullRequestColumnFilters['state']
+    draft?: IssueOrPullRequestColumnFilters['draft']
+    query?: string
   }
   data: ColumnSubscriptionData<any>
   createdAt: string
@@ -210,9 +211,10 @@ export type NotificationColumnSubscription = {
     })
 
 export interface BaseColumnFilters {
+  bot?: boolean
   clearedAt?: string
   draft?: boolean
-  // order?: Array<'asc' | 'desc'>
+  // order?: Array<[string, 'asc' | 'desc']>
   owners?: Partial<
     Record<
       string,
@@ -223,13 +225,8 @@ export interface BaseColumnFilters {
     >
   >
   private?: boolean
+  query?: string
   saved?: boolean
-  // search: {
-  //   exclude?: string
-  //   match?: string
-  //   regex?: string
-  // }
-  // sort?: string[]
   state?: Partial<Record<GitHubStateType, boolean>>
   subjectTypes?:
     | Partial<Record<GitHubEventSubjectType, boolean>>
@@ -245,6 +242,7 @@ export interface ActivityColumnFilters extends BaseColumnFilters {
 }
 
 export interface IssueOrPullRequestColumnFilters extends BaseColumnFilters {
+  involves?: Partial<Record<string, boolean>>
   subjectTypes?: Partial<Record<GitHubIssueOrPullRequestSubjectType, boolean>>
 }
 
@@ -314,10 +312,18 @@ export type GenericColumnCreation<
   updatedAt?: string
 }
 
+export type ActivityColumnCreation = GenericColumnCreation<ActivityColumn>
+export type IssueOrPullRequestColumnCreation = GenericColumnCreation<
+  IssueOrPullRequestColumn
+>
+export type NotificationColumnCreation = GenericColumnCreation<
+  NotificationColumn
+>
+
 export type ColumnCreation =
-  | GenericColumnCreation<ActivityColumn>
-  | GenericColumnCreation<IssueOrPullRequestColumn>
-  | GenericColumnCreation<NotificationColumn>
+  | ActivityColumnCreation
+  | IssueOrPullRequestColumnCreation
+  | NotificationColumnCreation
 
 export type GenericColumnSubscriptionCreation<
   ColumnSubscriptionType extends
@@ -331,10 +337,20 @@ export type GenericColumnSubscriptionCreation<
   updatedAt?: string | undefined
 }
 
+export type ActivityColumnSubscriptionCreation = GenericColumnSubscriptionCreation<
+  ActivityColumnSubscription
+>
+export type IssueOrPullRequestColumnSubscriptionCreation = GenericColumnSubscriptionCreation<
+  IssueOrPullRequestColumnSubscription
+>
+export type NotificationColumnSubscriptionCreation = GenericColumnSubscriptionCreation<
+  NotificationColumnSubscription
+>
+
 export type ColumnSubscriptionCreation =
-  | GenericColumnSubscriptionCreation<ActivityColumnSubscription>
-  | GenericColumnSubscriptionCreation<IssueOrPullRequestColumnSubscription>
-  | GenericColumnSubscriptionCreation<NotificationColumnSubscription>
+  | ActivityColumnSubscriptionCreation
+  | IssueOrPullRequestColumnSubscriptionCreation
+  | NotificationColumnSubscriptionCreation
 
 export type ColumnParamField = 'all' | 'org' | 'owner' | 'repo' | 'username'
 
@@ -342,7 +358,6 @@ export interface AddColumnDetailsPayload {
   title: string
   icon: GitHubIcon
   subscription: Pick<ColumnSubscription, 'type' | 'subtype'>
-  paramList: ColumnParamField[]
   defaultFilters?: Partial<Column['filters']>
   defaultParams?: Partial<Record<ColumnParamField, any>>
   isPrivateSupported: boolean
@@ -406,6 +421,7 @@ export interface BannerMessage {
   message: string
   href?: string
   openOnNewTab?: boolean
+  disableOnSmallScreens?: boolean
   minLoginCount?: number
   closedAt?: string | undefined
   createdAt?: string
@@ -426,6 +442,11 @@ export interface ItemsFilterMetadata {
   saved: ItemFilterCountMetadata
   state: Record<GitHubStateType, ItemFilterCountMetadata>
   draft: ItemFilterCountMetadata
+  bot: ItemFilterCountMetadata
+
+  // items doesn't have enough info to correctly calculate this metadata
+  // involves: Partial<Record<string, ItemFilterCountMetadata | undefined>>
+
   subjectType: Partial<
     Record<GitHubItemSubjectType, ItemFilterCountMetadata | undefined>
   >

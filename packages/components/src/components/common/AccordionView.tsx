@@ -67,7 +67,7 @@ export const AccordionView = React.memo((props: AccordionViewProps) => {
         ),
 
         // [web] disable keyboard focus for this tree when accordion is collapsed
-        visibility: animatedStyles.height.interpolate(
+        ['visibility' as any]: animatedStyles.height.interpolate(
           (value: number | 'auto') =>
             value === 'auto' || value > 0 ? 'visible' : 'hidden',
         ),
@@ -89,3 +89,5 @@ export const AccordionView = React.memo((props: AccordionViewProps) => {
     </SpringAnimatedView>
   )
 })
+
+AccordionView.displayName = 'AccordionView'

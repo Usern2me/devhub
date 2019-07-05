@@ -1,20 +1,12 @@
-import React, { Fragment } from 'react'
+import React from 'react'
 import { View } from 'react-native'
 
-import {
-  getGitHubURLForBranch,
-  getGitHubURLForRelease,
-  getGitHubURLForRepo,
-  getGitHubURLForUser,
-  Omit,
-  ThemeColors,
-} from '@devhub/core'
+import { getGitHubURLForUser } from '@devhub/core'
 import { smallAvatarSize } from '../../../../styles/variables'
-import { genericParseText } from '../../../../utils/helpers/shared'
 import { Avatar } from '../../../common/Avatar'
 import { Link } from '../../../common/Link'
 import { Spacer } from '../../../common/Spacer'
-import { ThemedText, ThemedTextProps } from '../../../themed/ThemedText'
+import { ThemedTextProps } from '../../../themed/ThemedText'
 import { cardStyles } from '../../styles'
 import { BaseRow, BaseRowProps } from './partials/BaseRow'
 
@@ -23,17 +15,12 @@ export interface ActorActionRowProps
     BaseRowProps,
     'containerStyle' | 'contentContainerStyle' | 'left' | 'right'
   > {
-  avatarUrl: string | undefined
-  body: string
-  branch: string | undefined
-  forkOwnerName: string | undefined
-  forkRepositoryName: string | undefined
+  ActionTextComponent: React.ReactNode
+  avatarUrl?: string
+  bold: boolean
   isBot: boolean
-  isRead: boolean
+  muted: boolean
   numberOfLines?: number
-  ownerName: string
-  repositoryName: string
-  tag: string | undefined
   textStyle?: ThemedTextProps['style']
   url?: string
   userLinkURL: string | undefined
@@ -42,82 +29,23 @@ export interface ActorActionRowProps
 
 export const ActorActionRow = React.memo((props: ActorActionRowProps) => {
   const {
+    ActionTextComponent,
     avatarUrl,
-    body: _body,
-    branch,
-    forkOwnerName,
-    forkRepositoryName,
+    bold,
     isBot,
-    isRead,
-    numberOfLines = props.numberOfLines || 1,
-    ownerName,
-    repositoryName,
-    smallLeftColumn = true,
-    tag,
+    muted,
+    numberOfLines: _numberOfLines,
     textStyle,
     url,
     userLinkURL: _userLinkURL,
     username: _username,
-    viewMode,
+    smallLeftColumn = true,
     ...otherProps
   } = props
 
+  const numberOfLines = _numberOfLines || 1
   const username = isBot ? _username!.replace('[bot]', '') : _username
   const userLinkURL = _userLinkURL || getGitHubURLForUser(username, { isBot })
-
-  const fragmentMapper = (item: React.ReactNode, index: number) => (
-    <Fragment
-      key={`action-row-${ownerName}-${repositoryName}-${body}-${index}`}
-    >
-      {item}
-    </Fragment>
-  )
-
-  const color: keyof ThemeColors =
-    (isRead && 'foregroundColorMuted60') || 'foregroundColor'
-
-  const bodyStr = `${_body || ''}`.replace(_body[0], _body[0].toLowerCase())
-
-  const body =
-    bodyStr && (branch || tag) && ownerName && repositoryName
-      ? genericParseText(
-          bodyStr,
-          new RegExp(`${branch || tag}`.toLowerCase()),
-          match => {
-            return (
-              <Link
-                href={
-                  branch
-                    ? getGitHubURLForBranch(ownerName, repositoryName, branch)
-                    : tag
-                    ? getGitHubURLForRelease(ownerName, repositoryName, tag)
-                    : undefined
-                }
-                openOnNewTab
-                textProps={{ color }}
-              >
-                {match}
-              </Link>
-            )
-          },
-        ).map(fragmentMapper)
-      : bodyStr && forkOwnerName && forkRepositoryName
-      ? genericParseText(
-          bodyStr,
-          new RegExp(`${forkOwnerName}/${forkRepositoryName}`, 'i'),
-          match => {
-            return (
-              <Link
-                href={getGitHubURLForRepo(forkOwnerName, forkRepositoryName)}
-                openOnNewTab
-                textProps={{ color }}
-              >
-                {match}
-              </Link>
-            )
-          },
-        ).map(fragmentMapper)
-      : bodyStr
 
   return (
     <BaseRow
@@ -127,6 +55,7 @@ export const ActorActionRow = React.memo((props: ActorActionRowProps) => {
           avatarUrl={avatarUrl}
           isBot={isBot}
           linkURL={userLinkURL}
+          muted={muted}
           small={smallLeftColumn}
           style={cardStyles.avatar}
           username={username}
@@ -144,13 +73,12 @@ export const ActorActionRow = React.memo((props: ActorActionRowProps) => {
             href={userLinkURL}
             openOnNewTab
             textProps={{
-              color,
+              color: (muted && 'foregroundColorMuted60') || 'foregroundColor',
               numberOfLines,
               style: [
                 cardStyles.normalText,
-                cardStyles.boldText,
+                bold && cardStyles.boldText,
                 cardStyles.smallText,
-                // isRead && { fontWeight: undefined },
                 { lineHeight: smallAvatarSize },
                 textStyle,
               ],
@@ -161,22 +89,12 @@ export const ActorActionRow = React.memo((props: ActorActionRowProps) => {
 
           <Spacer width={4} />
 
-          <ThemedText
-            color={color}
-            numberOfLines={numberOfLines}
-            style={[
-              cardStyles.normalText,
-              cardStyles.smallText,
-              { lineHeight: smallAvatarSize },
-              textStyle,
-            ]}
-          >
-            {body}
-          </ThemedText>
+          {ActionTextComponent}
         </View>
       }
       smallLeftColumn={smallLeftColumn}
-      viewMode={viewMode}
     />
   )
 })
+
+ActorActionRow.displayName = 'ActorActionRow'

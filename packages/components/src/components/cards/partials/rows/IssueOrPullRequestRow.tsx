@@ -6,7 +6,6 @@ import {
   getFullDateText,
   getGitHubURLForUser,
   GitHubLabel,
-  Omit,
   stripMarkdown,
   ThemeColors,
   trimNewLinesAndSpaces,
@@ -18,7 +17,6 @@ import { fixURL } from '../../../../utils/helpers/github/url'
 import { Avatar } from '../../../common/Avatar'
 import { ConditionalWrap } from '../../../common/ConditionalWrap'
 import { IntervalRefresh } from '../../../common/IntervalRefresh'
-import { LabelProps } from '../../../common/Label'
 import { Link } from '../../../common/Link'
 import { Spacer } from '../../../common/Spacer'
 import { ThemedIcon, ThemedIconProps } from '../../../themed/ThemedIcon'
@@ -37,7 +35,7 @@ export interface IssueOrPullRequestRowProps
   > {
   addBottomAnchor?: boolean
   avatarUrl: string | undefined
-  backgroundThemeColor: LabelProps['backgroundThemeColor']
+  backgroundThemeColor: keyof ThemeColors | ((theme: ThemeColors) => string)
   body: string | undefined
   bold?: boolean
   commentsCount?: number
@@ -49,9 +47,9 @@ export interface IssueOrPullRequestRowProps
   id: string | number | undefined
   inlineLabels?: boolean
   isPrivate: boolean
-  isRead: boolean
   issueOrPullRequestNumber: number
   labels?: GitHubLabel[] | undefined
+  muted: boolean
   owner: string
   repo: string
   rightTitle?: React.ReactNode
@@ -81,9 +79,9 @@ export const IssueOrPullRequestRow = React.memo(
       id,
       inlineLabels: _inlineLabels,
       isPrivate,
-      isRead,
       issueOrPullRequestNumber,
       labels,
+      muted,
       owner,
       repo,
       rightTitle,
@@ -129,6 +127,7 @@ export const IssueOrPullRequestRow = React.memo(
               avatarUrl={avatarUrl}
               isBot={isBot}
               linkURL={userLinkURL}
+              muted={muted}
               small
               style={cardStyles.avatar}
               username={username}
@@ -170,7 +169,7 @@ export const IssueOrPullRequestRow = React.memo(
                   enableTextWrapper
                   href={htmlUrl}
                   style={[
-                    !inlineLabels && !rightTitle && sharedStyles.flexGrow,
+                    !inlineLabels && !rightTitle && sharedStyles.flex,
                     { alignSelf: 'flex-start' },
                     !!inlineLabels &&
                       labels &&
@@ -180,16 +179,12 @@ export const IssueOrPullRequestRow = React.memo(
                       labels.length > 0 && { marginBottom: innerCardSpacing },
                   ]}
                   textProps={{
-                    color: isRead
-                      ? 'foregroundColorMuted60'
-                      : 'foregroundColor',
-                    // color: 'foregroundColor',
+                    color: muted ? 'foregroundColorMuted60' : 'foregroundColor',
                     numberOfLines,
                     style: [
                       sharedStyles.flex,
                       cardStyles.normalText,
                       bold && cardStyles.boldText,
-                      // isRead && { fontWeight: undefined },
                     ],
                   }}
                   // tooltip={`${title}${_body ? `\n\n${_body}` : ''}`}
@@ -230,9 +225,9 @@ export const IssueOrPullRequestRow = React.memo(
                     color: label.color && `#${label.color}`,
                     name: label.name,
                   }))}
-                  muted={isRead}
+                  muted={muted}
                   textThemeColor={
-                    isRead ? 'foregroundColorMuted40' : 'foregroundColorMuted60'
+                    muted ? 'foregroundColorMuted40' : 'foregroundColorMuted60'
                   }
                 />
               )}
@@ -247,7 +242,7 @@ export const IssueOrPullRequestRow = React.memo(
                     href={htmlUrl}
                     style={cardRowStyles.mainContentContainer}
                     textProps={{
-                      color: isRead
+                      color: muted
                         ? 'foregroundColorMuted60'
                         : 'foregroundColor',
                       // color: 'foregroundColor',
@@ -300,7 +295,7 @@ export const IssueOrPullRequestRow = React.memo(
 
                                 <ThemedText
                                   color={
-                                    isRead
+                                    muted
                                       ? 'foregroundColorMuted40'
                                       : 'foregroundColorMuted60'
                                   }
@@ -334,7 +329,7 @@ export const IssueOrPullRequestRow = React.memo(
 
                                 <ThemedText
                                   color={
-                                    isRead
+                                    muted
                                       ? 'foregroundColorMuted40'
                                       : 'foregroundColorMuted60'
                                   }
@@ -370,7 +365,6 @@ export const IssueOrPullRequestRow = React.memo(
                         commentsCount >= 0 && (
                           <CardSmallThing
                             icon="comment"
-                            isRead={isRead}
                             text={commentsCount}
                             url={htmlUrl}
                           />
@@ -382,7 +376,6 @@ export const IssueOrPullRequestRow = React.memo(
 
                           <CardItemId
                             id={issueOrPullRequestNumber}
-                            isRead={isRead}
                             url={htmlUrl}
                           />
                         </>
@@ -398,3 +391,5 @@ export const IssueOrPullRequestRow = React.memo(
     )
   },
 )
+
+IssueOrPullRequestRow.displayName = 'IssueOrPullRequestRow'

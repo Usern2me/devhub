@@ -2,12 +2,19 @@ import React, { Fragment } from 'react'
 import { StyleSheet } from 'react-native'
 
 import { ThemeColors } from '@devhub/core'
-import { contentPadding, radius, smallerTextSize } from '../../styles/variables'
+import {
+  contentPadding,
+  mutedOpacity,
+  radius,
+  smallerTextSize,
+} from '../../styles/variables'
 import { ThemedText } from '../themed/ThemedText'
 import { ThemedView } from '../themed/ThemedView'
 
 export interface CounterMetadataProps {
   alwaysRenderANumber?: boolean
+  backgroundColor?: keyof ThemeColors
+  foregroundColor?: keyof ThemeColors
   read?: number | undefined
   total?: number | undefined
   unread?: number | undefined
@@ -17,14 +24,17 @@ interface NumberMetadata {
   key: string
   number: number | string
   color: keyof ThemeColors
+  opacity: number
 }
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    borderRadius: radius,
     paddingVertical: contentPadding / 8,
     paddingHorizontal: contentPadding / 2,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    borderRadius: radius,
   },
 
   number: {
@@ -38,7 +48,26 @@ const styles = StyleSheet.create({
 })
 
 export function CounterMetadata(props: CounterMetadataProps) {
-  const { alwaysRenderANumber, read, total, unread } = props
+  const {
+    alwaysRenderANumber,
+    backgroundColor: _backgroundColor,
+    read,
+    total,
+    unread,
+  } = props
+
+  const backgroundColor =
+    _backgroundColor || (unread ? 'backgroundColorLess2' : undefined)
+
+  const borderColor = !unread ? 'backgroundColorLess2' : undefined
+
+  const isCustomBackground = !!(
+    backgroundColor && !backgroundColor.startsWith('backgroundColor')
+  )
+  const mutedColorOpacity = isCustomBackground ? mutedOpacity : 1
+  const foregroundMutedColor = isCustomBackground
+    ? 'foregroundColor'
+    : 'foregroundColorMuted40'
 
   const firstNumberMetadata: NumberMetadata | undefined =
     unread !== undefined && unread > 0
@@ -46,12 +75,14 @@ export function CounterMetadata(props: CounterMetadataProps) {
           key: 'unread',
           number: formatNumber(unread),
           color: 'foregroundColor',
+          opacity: 1,
         }
       : read !== undefined && read > 0
       ? {
           key: 'read',
           number: formatNumber(read),
-          color: 'foregroundColorMuted40',
+          color: foregroundMutedColor,
+          opacity: mutedColorOpacity,
         }
       : undefined
 
@@ -63,7 +94,8 @@ export function CounterMetadata(props: CounterMetadataProps) {
       ? ({
           key: 'total',
           number: formatNumber(total),
-          color: 'foregroundColorMuted40',
+          color: foregroundMutedColor,
+          opacity: mutedColorOpacity,
         } as NumberMetadata)
       : undefined,
   ].filter(Boolean)
@@ -73,7 +105,8 @@ export function CounterMetadata(props: CounterMetadataProps) {
       numberNodesMetadata.push({
         key: 'zero',
         number: formatNumber(0),
-        color: 'foregroundColorMuted40',
+        color: foregroundMutedColor,
+        opacity: mutedColorOpacity,
       })
     } else {
       return null
@@ -81,21 +114,32 @@ export function CounterMetadata(props: CounterMetadataProps) {
   }
 
   return (
-    <ThemedView backgroundColor="backgroundColorLess2" style={styles.container}>
+    <ThemedView
+      backgroundColor={backgroundColor}
+      borderColor={borderColor}
+      style={styles.container}
+    >
       {numberNodesMetadata.map(
         (meta, index) =>
           !!meta && (
             <Fragment key={meta.key}>
               {index > 0 && (
                 <ThemedText
-                  color="foregroundColorMuted40"
-                  style={styles.separator}
+                  color={foregroundMutedColor}
+                  style={[styles.separator, { opacity: mutedColorOpacity }]}
+                  themeTransformer={
+                    isCustomBackground ? 'force-dark' : undefined
+                  }
                 >
                   /
                 </ThemedText>
               )}
 
-              <ThemedText color={meta.color} style={styles.number}>
+              <ThemedText
+                color={meta.color}
+                style={[styles.number, { opacity: meta.opacity }]}
+                themeTransformer={isCustomBackground ? 'force-dark' : undefined}
+              >
                 {meta.number}
               </ThemedText>
             </Fragment>

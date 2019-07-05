@@ -1,5 +1,6 @@
 import _ from 'lodash'
 import { StyleSheet } from 'react-native'
+
 import { mutedOpacity } from './variables'
 
 export const sharedStyles = StyleSheet.create({
@@ -8,11 +9,17 @@ export const sharedStyles = StyleSheet.create({
   },
 
   flexGrow: {
-    flex: 1,
+    flexGrow: 1,
   },
 
   flexWrap: {
     flexWrap: 'wrap',
+  },
+
+  center: {
+    alignContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   horizontal: {

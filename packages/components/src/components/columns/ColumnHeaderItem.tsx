@@ -1,6 +1,13 @@
 import { rgba } from 'polished'
 import React, { useCallback, useLayoutEffect, useRef } from 'react'
-import { ImageStyle, StyleProp, TextStyle, View, ViewStyle } from 'react-native'
+import {
+  ImageStyle,
+  StyleProp,
+  StyleSheet,
+  TextStyle,
+  View,
+  ViewStyle,
+} from 'react-native'
 import { useSpring } from 'react-spring/native'
 
 import { constants, GitHubIcon, ThemeColors } from '@devhub/core'
@@ -28,18 +35,25 @@ import { useTheme } from '../context/ThemeContext'
 import { getThemeColorOrItself } from '../themed/helpers'
 
 export interface ColumnHeaderItemProps {
+  activeOpacity?: TouchableOpacityProps['activeOpacity']
   analyticsAction?: TouchableOpacityProps['analyticsAction']
   analyticsLabel?: TouchableOpacityProps['analyticsLabel']
   avatarProps?: Partial<AvatarProps>
   avatarStyle?: StyleProp<ImageStyle>
-  backgroundColor?: string
+  backgroundThemeColor?:
+    | keyof ThemeColors
+    | ((theme: ThemeColors) => string)
+    | string
   children?: React.ReactNode
   disabled?: TouchableOpacityProps['disabled']
   enableBackgroundHover?: boolean
   enableForegroundHover?: boolean
   fixedIconSize?: boolean
   forceHoverState?: boolean
-  foregroundColor?: string
+  foregroundThemeColor?:
+    | keyof ThemeColors
+    | ((theme: ThemeColors) => string)
+    | string
   hoverBackgroundThemeColor?:
     | keyof ThemeColors
     | ((theme: ThemeColors) => string)
@@ -48,6 +62,7 @@ export interface ColumnHeaderItemProps {
     | ((theme: ThemeColors) => string)
   iconName?: GitHubIcon
   iconStyle?: StyleProp<TextStyle>
+  isUnread?: boolean
   label?: string
   mainContainerStyle?: StyleProp<ViewStyle>
   noPadding?: boolean
@@ -63,25 +78,32 @@ export interface ColumnHeaderItemProps {
   title?: string
   titleStyle?: StyleProp<TextStyle>
   tooltip: string | undefined
+  unreadIndicatorBackgroundThemeColor?:
+    | keyof ThemeColors
+    | ((theme: ThemeColors) => string)
 }
 
 export const ColumnHeaderItem = React.memo((props: ColumnHeaderItemProps) => {
   const {
+    activeOpacity = Platform.realOS !== 'web' && props.enableBackgroundHover
+      ? 1
+      : undefined,
     analyticsAction,
     analyticsLabel,
     avatarProps: _avatarProps,
-    backgroundColor,
+    backgroundThemeColor,
     children,
     disabled,
     enableBackgroundHover,
     enableForegroundHover,
     fixedIconSize,
     forceHoverState,
-    foregroundColor,
-    hoverBackgroundThemeColor: _hoverBackgroundThemeColor,
-    hoverForegroundThemeColor: _hoverForegroundThemeColor,
+    foregroundThemeColor,
+    hoverBackgroundThemeColor = 'backgroundColorLess1',
+    hoverForegroundThemeColor,
     iconName,
     iconStyle,
+    isUnread,
     label: _label,
     mainContainerStyle,
     noPadding,
@@ -97,19 +119,32 @@ export const ColumnHeaderItem = React.memo((props: ColumnHeaderItemProps) => {
     title,
     titleStyle,
     tooltip,
+    unreadIndicatorBackgroundThemeColor = 'primaryBackgroundColor',
   } = props
+
+  const theme = useTheme()
+
+  const cacheRef = useRef({ isHovered: false })
 
   const getStyles = useCallback(
     ({ forceImmediate }: { forceImmediate?: boolean } = {}) => {
-      const { isHovered: _isHovered, theme } = cacheRef.current
+      const { isHovered: _isHovered } = cacheRef.current
 
-      const hoverBackgroundThemeColor = getThemeColorOrItself(
+      const backgroundColor = getThemeColorOrItself(theme, backgroundThemeColor)
+      const foregroundColor = getThemeColorOrItself(theme, foregroundThemeColor)
+
+      const hoverBackgroundColor = getThemeColorOrItself(
         theme,
-        _hoverBackgroundThemeColor,
+        hoverBackgroundThemeColor,
       )
-      const hoverForegroundThemeColor = getThemeColorOrItself(
+      const hoverForegroundColor = getThemeColorOrItself(
         theme,
-        _hoverForegroundThemeColor,
+        hoverForegroundThemeColor,
+      )
+
+      const unreadIndicatorBackgroundColor = getThemeColorOrItself(
+        theme,
+        unreadIndicatorBackgroundThemeColor,
       )
 
       const isHovered = (_isHovered || forceHoverState) && !disabled
@@ -117,33 +152,43 @@ export const ColumnHeaderItem = React.memo((props: ColumnHeaderItemProps) => {
         constants.DISABLE_ANIMATIONS ||
         forceImmediate ||
         isHovered ||
-        !!(enableForegroundHover && !enableBackgroundHover)
+        !!(enableForegroundHover && !enableBackgroundHover) ||
+        (Platform.OS === 'web' && Platform.realOS !== 'web')
 
       return {
         config: getDefaultReactSpringAnimationConfig(),
         immediate,
         backgroundColor:
           isHovered && enableBackgroundHover
-            ? hoverBackgroundThemeColor || theme.backgroundColorLess1
+            ? hoverBackgroundColor || 'transparent'
             : rgba(backgroundColor || theme.backgroundColor, 0),
+        backgroundColorWithoutTransparency:
+          isHovered && enableBackgroundHover
+            ? hoverBackgroundColor || 'transparent'
+            : backgroundColor || theme.backgroundColor,
         foregroundColor:
           isHovered && enableForegroundHover
-            ? hoverForegroundThemeColor || theme.primaryBackgroundColor
+            ? hoverForegroundColor || theme.primaryBackgroundColor
             : foregroundColor || theme.foregroundColor,
         mutedForegroundColor: theme.foregroundColorMuted60,
+        primaryBackgroundColor: theme.primaryBackgroundColor,
+        unreadIndicatorBackgroundColor,
       }
     },
     [
-      backgroundColor,
+      backgroundThemeColor,
       disabled,
       enableBackgroundHover,
       enableForegroundHover,
       forceHoverState,
-      foregroundColor,
-      _hoverBackgroundThemeColor,
-      _hoverForegroundThemeColor,
+      foregroundThemeColor,
+      hoverBackgroundThemeColor,
+      hoverForegroundThemeColor,
+      theme,
     ],
   )
+
+  const [springAnimatedStyles, setSpringAnimatedStyles] = useSpring(getStyles)
 
   const updateStyles = useCallback(
     ({ forceImmediate }: { forceImmediate?: boolean }) => {
@@ -152,33 +197,18 @@ export const ColumnHeaderItem = React.memo((props: ColumnHeaderItemProps) => {
     [getStyles],
   )
 
-  const initialTheme = useTheme(
-    useCallback(
-      theme => {
-        if (cacheRef.current.theme === theme) return
-        cacheRef.current.theme = theme
-        updateStyles({ forceImmediate: true })
-      },
-      [updateStyles],
-    ),
-  )
-
   const containerRef = useRef<View>(null)
-  useHover(
+  const initialIsHovered = useHover(
     enableBackgroundHover || enableForegroundHover ? containerRef : null,
     isHovered => {
       cacheRef.current.isHovered = isHovered
       updateStyles({ forceImmediate: false })
     },
   )
-
-  const cacheRef = useRef({ isHovered: false, theme: initialTheme })
-  cacheRef.current.theme = initialTheme
-
-  const [springAnimatedStyles, setSpringAnimatedStyles] = useSpring(getStyles)
+  cacheRef.current.isHovered = initialIsHovered
 
   useLayoutEffect(() => {
-    updateStyles({ forceImmediate: false })
+    updateStyles({ forceImmediate: true })
   }, [updateStyles])
 
   useLayoutEffect(() => {
@@ -187,6 +217,7 @@ export const ColumnHeaderItem = React.memo((props: ColumnHeaderItemProps) => {
     if (!node) return
 
     node.title = tooltip || ''
+    if (!tooltip && node.removeAttribute) node.removeAttribute('title')
   }, [containerRef.current, tooltip])
 
   const _username = useReduxState(selectors.currentGitHubUsernameSelector)
@@ -240,47 +271,37 @@ export const ColumnHeaderItem = React.memo((props: ColumnHeaderItemProps) => {
     text: {} as TextStyle,
   }
 
+  const _wrapperStyle = StyleSheet.flatten([
+    styles.container,
+    noPadding
+      ? undefined
+      : {
+          paddingHorizontal: contentPadding / 3,
+          paddingVertical: showLabel ? undefined : contentPadding,
+        },
+    style,
+    { backgroundColor: springAnimatedStyles.backgroundColor },
+  ])
+
+  const { opacity, ...wrapperStyle } = _wrapperStyle
+
   const wrap: ConditionalWrapProps['wrap'] = child =>
     onPress ? (
       <SpringAnimatedTouchableOpacity
         ref={containerRef}
+        activeOpacity={activeOpacity}
         analyticsAction={analyticsAction}
         analyticsLabel={analyticsLabel}
         disabled={disabled}
         onPress={onPress}
         selectable={!onPress}
-        style={[
-          styles.container,
-          noPadding
-            ? undefined
-            : {
-                paddingHorizontal: contentPadding / 3,
-                paddingVertical:
-                  showLabel && label ? undefined : contentPadding,
-              },
-          style,
-          { backgroundColor: springAnimatedStyles.backgroundColor },
-        ]}
+        style={wrapperStyle}
         tooltip={tooltip}
       >
         {child}
       </SpringAnimatedTouchableOpacity>
     ) : (
-      <SpringAnimatedView
-        ref={containerRef}
-        style={[
-          styles.container,
-          noPadding
-            ? undefined
-            : {
-                paddingHorizontal: contentPadding / 3,
-                paddingVertical:
-                  showLabel && label ? undefined : contentPadding,
-              },
-          style,
-          { backgroundColor: springAnimatedStyles.backgroundColor },
-        ]}
-      >
+      <SpringAnimatedView ref={containerRef} style={wrapperStyle}>
         {child}
       </SpringAnimatedView>
     )
@@ -288,7 +309,7 @@ export const ColumnHeaderItem = React.memo((props: ColumnHeaderItemProps) => {
   return (
     <ConditionalWrap condition wrap={wrap}>
       <>
-        <View style={[styles.mainContainer, mainContainerStyle]}>
+        <View style={[styles.mainContainer, { opacity }, mainContainerStyle]}>
           {(!!iconName || !!username) && (
             <View
               style={{
@@ -300,6 +321,25 @@ export const ColumnHeaderItem = React.memo((props: ColumnHeaderItemProps) => {
                 marginRight: hasText ? contentPadding / 2 : 0,
               }}
             >
+              {!!isUnread && (
+                <SpringAnimatedView
+                  style={{
+                    position: 'absolute',
+                    ...(showLabel ? { top: -2 } : { bottom: -3 }),
+                    right: -7,
+                    width: 12,
+                    height: 12,
+                    backgroundColor:
+                      springAnimatedStyles.unreadIndicatorBackgroundColor,
+                    borderColor:
+                      springAnimatedStyles.backgroundColorWithoutTransparency,
+                    borderWidth: 2,
+                    borderRadius: 12 / 2,
+                    zIndex: 1,
+                  }}
+                />
+              )}
+
               {!!username ? (
                 <Avatar
                   isBot={false}
@@ -373,7 +413,7 @@ export const ColumnHeaderItem = React.memo((props: ColumnHeaderItemProps) => {
           )}
         </View>
 
-        {!!showLabel && !!label && (
+        {!!showLabel && (
           <SpringAnimatedText
             style={[
               {
@@ -383,12 +423,13 @@ export const ColumnHeaderItem = React.memo((props: ColumnHeaderItemProps) => {
                 letterSpacing: -0.5,
                 fontSize: 10,
                 textAlign: 'center',
+                opacity,
               },
               { color: springAnimatedStyles.foregroundColor },
             ]}
             numberOfLines={1}
           >
-            {label}
+            {label || '?'}
           </SpringAnimatedText>
         )}
 
@@ -397,3 +438,5 @@ export const ColumnHeaderItem = React.memo((props: ColumnHeaderItemProps) => {
     </ConditionalWrap>
   )
 })
+
+ColumnHeaderItem.displayName = 'ColumnHeaderItem'

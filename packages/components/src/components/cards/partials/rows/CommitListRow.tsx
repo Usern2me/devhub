@@ -1,23 +1,25 @@
+import _ from 'lodash'
 import React from 'react'
 
+import { GitHubPushedCommit } from '@devhub/core'
 import { CommitRow, CommitRowProps } from './CommitRow'
-import { RenderItem, RowList } from './RowList'
+import { RenderItem, RowList, RowListProps, rowListProps } from './RowList'
 
-import { GitHubPushedCommit, Omit } from '@devhub/core'
-
-export interface CommitListRowProps
+interface ListProps
+  extends Omit<RowListProps<GitHubPushedCommit>, 'renderItem'> {}
+interface ItemProps
   extends Omit<
     CommitRowProps,
-    'authorEmail' | 'authorName' | 'message' | 'showMoreItemsIndicator' | 'url'
-  > {
-  commits: GitHubPushedCommit[]
-  isRead: boolean
-  maxHeight?: number
-}
+    'authorEmail' | 'authorName' | 'big' | 'message' | 'url'
+  > {}
 
-export const CommitListRow = React.memo((props: CommitListRowProps) => {
+export interface CommitListRowProps extends ListProps, ItemProps {}
+
+export const CommitListRow = React.memo((_props: CommitListRowProps) => {
+  const listProps = _.pick(_props, rowListProps) as ListProps
+  const itemProps = _.omit(_props, rowListProps) as ItemProps
+
   const renderItem: RenderItem<GitHubPushedCommit> = ({
-    showMoreItemsIndicator,
     index,
     item: commit,
   }) => {
@@ -26,20 +28,18 @@ export const CommitListRow = React.memo((props: CommitListRowProps) => {
     return (
       <CommitRow
         key={`commit-row-${commit.sha}`}
-        {...props}
+        {...itemProps}
         authorEmail={commit.author.email}
         authorName={commit.author.name}
+        big={false}
         message={commit.message}
-        showMoreItemsIndicator={showMoreItemsIndicator}
         url={commit.url}
-        withTopMargin={index === 0 ? props.withTopMargin : true}
+        withTopMargin={index === 0 ? !!itemProps.withTopMargin : true}
       />
     )
   }
 
-  const { commits, ...otherProps } = props
-
-  if (!(commits && commits.length > 0)) return null
-
-  return <RowList {...otherProps} data={commits} renderItem={renderItem} />
+  return <RowList {...listProps} renderItem={renderItem} />
 })
+
+CommitListRow.displayName = 'CommitListRow'

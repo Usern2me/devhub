@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 
-import { ModalPayload, Omit } from '@devhub/core'
+import { ModalPayload } from '@devhub/core'
 import { NativeComponent } from 'react-native'
 import { useReduxAction } from '../../hooks/use-redux-action'
 import { useReduxState } from '../../hooks/use-redux-state'
@@ -128,3 +128,5 @@ export const ModalColumn = React.memo((props: ModalColumnProps) => {
     </Column>
   )
 })
+
+ModalColumn.displayName = 'ModalColumn'

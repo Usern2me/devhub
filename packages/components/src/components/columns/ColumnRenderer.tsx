@@ -1,5 +1,5 @@
 import { getLuminance } from 'polished'
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import { Dimensions, View } from 'react-native'
 
 import {
@@ -23,6 +23,7 @@ import { useEmitter } from '../../hooks/use-emitter'
 import { useReduxAction } from '../../hooks/use-redux-action'
 import { useRepoTableColumnWidth } from '../../hooks/use-repo-table-column-width'
 import { emitter } from '../../libs/emitter'
+import { Platform } from '../../libs/platform'
 import * as actions from '../../redux/actions'
 import { sharedStyles } from '../../styles/shared'
 import {
@@ -30,68 +31,70 @@ import {
   contentPadding,
   sidebarSize,
 } from '../../styles/variables'
+import { CardBorder } from '../cards/partials/CardBorder'
 import { FreeTrialHeaderMessage } from '../common/FreeTrialHeaderMessage'
-import { separatorSize, separatorThickSize } from '../common/Separator'
+import { separatorSize } from '../common/Separator'
 import { Spacer } from '../common/Spacer'
 import { useColumnFilters } from '../context/ColumnFiltersContext'
+import { useFocusedColumn } from '../context/ColumnFocusContext'
 import { useColumnWidth } from '../context/ColumnWidthContext'
 import { useAppLayout } from '../context/LayoutContext'
-import { useTheme } from '../context/ThemeContext'
 import { ViewMeasurer } from '../render-props/ViewMeasure'
 import { Column } from './Column'
 import { ColumnHeader } from './ColumnHeader'
 import { ColumnHeaderItem } from './ColumnHeaderItem'
 import { ColumnOptionsRenderer } from './ColumnOptionsRenderer'
+import { getColumnSeparatorSize } from './ColumnSeparator'
 
 export function getColumnCardThemeColors(
   backgroundColor: string,
 ): {
   column: keyof ThemeColors
-  unread: keyof ThemeColors
-  unread__hover: keyof ThemeColors
-  read: keyof ThemeColors
-  read__hover: keyof ThemeColors
+  card: keyof ThemeColors
+  card__hover: keyof ThemeColors
+  card__muted: keyof ThemeColors
+  card__muted_hover: keyof ThemeColors
 } {
   const luminance = getLuminance(backgroundColor)
 
-  if (luminance <= 0.02) {
+  if (luminance <= 0.01) {
     return {
+      card: 'backgroundColorLighther3',
+      card__hover: 'backgroundColorLighther4',
+      card__muted: 'backgroundColor',
+      card__muted_hover: 'backgroundColorLighther2',
       column: 'backgroundColor',
-      read: 'backgroundColor',
-      read__hover: 'backgroundColorLighther2',
-      unread: 'backgroundColorLighther3',
-      unread__hover: 'backgroundColorLighther4',
     }
   }
 
   if (luminance >= 0.6) {
     return {
+      card: 'backgroundColorLighther1',
+      card__hover: 'backgroundColorLighther2',
+      card__muted: 'backgroundColorDarker1',
+      card__muted_hover: 'backgroundColorDarker2',
       column: 'backgroundColor',
-      read: 'backgroundColorDarker1',
-      read__hover: 'backgroundColorDarker2',
-      unread: 'backgroundColorLighther1',
-      unread__hover: 'backgroundColorLighther2',
     }
   }
 
   return {
+    card: 'backgroundColorLighther2',
+    card__hover: 'backgroundColorLighther3',
+    card__muted: 'backgroundColorDarker1',
+    card__muted_hover: 'backgroundColorDarker2',
     column: 'backgroundColor',
-    read: 'backgroundColor',
-    read__hover: 'backgroundColorDarker1',
-    unread: 'backgroundColorLighther2',
-    unread__hover: 'backgroundColorLighther3',
   }
 }
 
 export function getCardBackgroundThemeColor(
   theme: ThemeColors,
-  { isRead }: { isRead: boolean },
+  { muted }: { muted: boolean },
 ) {
   const backgroundThemeColors = getColumnCardThemeColors(theme.backgroundColor)
 
   const _backgroundThemeColor =
     // (isFocused && 'backgroundColorLess2') ||
-    (isRead && backgroundThemeColors.read) || backgroundThemeColors.unread
+    (muted && backgroundThemeColors.card__muted) || backgroundThemeColors.card
 
   return _backgroundThemeColor
 }
@@ -101,9 +104,12 @@ export interface ColumnRendererProps {
   avatarUsername?: string
   children: (p: {
     cardViewMode: CardViewMode
+    disableItemFocus: boolean
     enableCompactLabels: boolean
+    isFiltersOpened: boolean
   }) => React.ReactNode
   column: ColumnType
+  columnIndex: number
   disableColumnOptions?: boolean
   icon: GitHubIcon
   owner: string | undefined
@@ -120,6 +126,7 @@ export const ColumnRenderer = React.memo((props: ColumnRendererProps) => {
     avatarUsername,
     children,
     column,
+    columnIndex,
     disableColumnOptions,
     icon,
     owner,
@@ -131,36 +138,31 @@ export const ColumnRenderer = React.memo((props: ColumnRendererProps) => {
   } = props
 
   const [_isLocalFiltersOpened, setIsLocalFiltersOpened] = useState(false)
+
   const {
     enableSharedFiltersView,
     fixedWidth,
     inlineMode,
     isSharedFiltersOpened: _isSharedFiltersOpened,
   } = useColumnFilters()
+
   const isFiltersOpened = enableSharedFiltersView
     ? _isSharedFiltersOpened
     : _isLocalFiltersOpened
 
-  const { appOrientation } = useAppLayout()
+  const { appOrientation, sizename } = useAppLayout()
+
   const {
     appViewMode,
     getCardViewMode,
     getEnableCompactLabels,
   } = useAppViewMode()
+
+  const { focusedColumnId } = useFocusedColumn()
+
   const columnWidth = useColumnWidth()
+
   const repoTableColumnWidth = useRepoTableColumnWidth()
-
-  const columnRef = useRef<View>(null)
-  useTheme(theme => {
-    if (!columnRef.current) return
-
-    columnRef.current!.setNativeProps({
-      style: {
-        backgroundColor:
-          theme[getColumnCardThemeColors(theme.backgroundColor).column],
-      },
-    })
-  })
 
   useEmitter(
     'TOGGLE_COLUMN_FILTERS',
@@ -172,7 +174,7 @@ export const ColumnRenderer = React.memo((props: ColumnRendererProps) => {
     [column.id, enableSharedFiltersView],
   )
 
-  const { filteredItems } = useColumnData(column.id, false)
+  const { filteredItems } = useColumnData(column.id, { mergeSimilar: false })
 
   const clearableItems = (filteredItems as any[]).filter(
     (
@@ -254,30 +256,52 @@ export const ColumnRenderer = React.memo((props: ColumnRendererProps) => {
     ) => !isItemRead(item),
   )
 
-  const estimatedContainerHeight =
+  const renderLeftSeparator =
+    appViewMode === 'multi-column' &&
+    !(columnIndex === 0 && appOrientation === 'landscape')
+
+  const renderRightSeparator = appViewMode === 'multi-column'
+
+  const estimatedInitialCardWidth = Math.round(
+    appViewMode === 'multi-column'
+      ? columnWidth -
+          (renderLeftSeparator ? getColumnSeparatorSize() / 2 : 0) -
+          (renderRightSeparator ? getColumnSeparatorSize() / 2 : 0)
+      : Dimensions.get('window').width -
+          (enableSharedFiltersView && inlineMode
+            ? fixedWidth + getColumnSeparatorSize()
+            : 0) -
+          (appOrientation !== 'portrait'
+            ? sidebarSize + getColumnSeparatorSize()
+            : sizename === '1-small'
+            ? 0
+            : separatorSize),
+  )
+
+  const estimatedContainerHeight = Math.round(
     appOrientation === 'portrait'
       ? Dimensions.get('window').height - columnHeaderHeight - sidebarSize - 2
-      : Dimensions.get('window').height - columnHeaderHeight - 1
-
-  const estimatedInitialCardWidth =
-    appViewMode === 'multi-column'
-      ? columnWidth
-      : Dimensions.get('window').width -
-        (enableSharedFiltersView && inlineMode ? fixedWidth : 0) -
-        (appOrientation !== 'portrait'
-          ? sidebarSize + 2 * separatorThickSize
-          : separatorSize)
+      : Dimensions.get('window').height - columnHeaderHeight - 1,
+  )
 
   return (
     <Column
       key={`column-renderer-${column.id}-inner-container`}
-      ref={columnRef}
+      backgroundColor={theme =>
+        theme[getColumnCardThemeColors(theme.backgroundColor).column]
+      }
       columnId={column.id}
       fullWidth={appViewMode === 'single-column'}
       pagingEnabled={pagingEnabled}
-      renderSideSeparators
+      renderLeftSeparator={renderLeftSeparator}
+      renderRightSeparator={renderRightSeparator}
     >
       <ColumnHeader key={`column-renderer-${column.id}-header`}>
+        {Platform.realOS === 'web' &&
+          filteredItems.length === 0 &&
+          focusedColumnId === column.id &&
+          appViewMode === 'multi-column' && <CardBorder />}
+
         <ColumnHeaderItem
           analyticsLabel={undefined}
           avatarProps={
@@ -443,7 +467,14 @@ export const ColumnRenderer = React.memo((props: ColumnRendererProps) => {
                 }: {
                   cardViewMode: CardViewMode
                   enableCompactLabels: boolean
-                }) => children({ cardViewMode, enableCompactLabels })}
+                }) =>
+                  children({
+                    cardViewMode,
+                    disableItemFocus: inlineMode ? false : isFiltersOpened,
+                    enableCompactLabels,
+                    isFiltersOpened,
+                  })
+                }
               </ViewMeasurer>
 
               {!!isFreeTrial && <FreeTrialHeaderMessage />}
@@ -454,3 +485,5 @@ export const ColumnRenderer = React.memo((props: ColumnRendererProps) => {
     </Column>
   )
 })
+
+ColumnRenderer.displayName = 'ColumnRenderer'

@@ -14,6 +14,7 @@ import { getDefaultReactSpringAnimationConfig } from '../../utils/helpers/animat
 import { SpringAnimatedView } from '../animated/spring/SpringAnimatedView'
 import { AccordionView } from '../common/AccordionView'
 import { ConditionalWrap } from '../common/ConditionalWrap'
+import { Separator } from '../common/Separator'
 import { Spacer } from '../common/Spacer'
 import {
   TouchableOpacity,
@@ -31,14 +32,14 @@ export interface ColumnOptionsRowProps {
   contentContainerStyle?: ViewStyle
   disableBackground?: boolean
   enableBackgroundHover?: boolean
+  forceImmediate?: boolean
   hasChanged: boolean
   headerItemFixedIconSize?: number
   iconName: GitHubIcon
-  forceImmediate?: boolean
   isOpen: boolean
   onToggle: (() => void) | undefined
   openOnHover?: boolean
-  subtitle?: string
+  right?: string | React.ReactNode
   title: string
 }
 
@@ -55,15 +56,28 @@ export function ColumnOptionsRow(props: ColumnOptionsRowProps) {
     isOpen,
     onToggle,
     openOnHover,
-    subtitle,
+    right: _right,
     title,
   } = props
 
+  const subtitle = _right && typeof _right === 'string' ? _right : undefined
+  const right = subtitle ? undefined : _right
+
+  const theme = useTheme()
+
+  const cacheRef = useRef({
+    isHovered: false,
+    isPressing: false,
+  })
+
   const getStyles = useCallback(
     ({ forceImmediate }: { forceImmediate?: boolean } = {}) => {
-      const { isHovered, isPressing, theme } = cacheRef.current
+      const { isHovered, isPressing } = cacheRef.current
       const immediate =
-        constants.DISABLE_ANIMATIONS || forceImmediate || isHovered
+        constants.DISABLE_ANIMATIONS ||
+        forceImmediate ||
+        isHovered ||
+        Platform.realOS !== 'web'
 
       return {
         config: getDefaultReactSpringAnimationConfig(),
@@ -74,7 +88,7 @@ export function ColumnOptionsRow(props: ColumnOptionsRowProps) {
             : theme[getColumnHeaderThemeColors(theme.backgroundColor).normal],
       }
     },
-    [enableBackgroundHover, isOpen],
+    [enableBackgroundHover, isOpen, theme],
   )
 
   const updateStyles = useCallback(
@@ -82,17 +96,6 @@ export function ColumnOptionsRow(props: ColumnOptionsRowProps) {
       setSpringAnimatedStyles(getStyles({ forceImmediate }))
     },
     [getStyles],
-  )
-
-  const initialTheme = useTheme(
-    useCallback(
-      theme => {
-        if (cacheRef.current.theme === theme) return
-        cacheRef.current.theme = theme
-        updateStyles({ forceImmediate: true })
-      },
-      [updateStyles],
-    ),
   )
 
   const touchableRef = useRef(null)
@@ -105,13 +108,7 @@ export function ColumnOptionsRow(props: ColumnOptionsRowProps) {
       if (openOnHover && onToggle && !isOpen) onToggle()
     },
   )
-
-  const cacheRef = useRef({
-    isHovered: initialIsHovered,
-    isPressing: false,
-    theme: initialTheme,
-  })
-  cacheRef.current.theme = initialTheme
+  cacheRef.current.isHovered = initialIsHovered
 
   const [springAnimatedStyles, setSpringAnimatedStyles] = useSpring(getStyles)
 
@@ -211,6 +208,8 @@ export function ColumnOptionsRow(props: ColumnOptionsRowProps) {
             </ThemedText>
           )}
 
+          {right}
+
           {!!onToggle && (
             <>
               <Spacer width={contentPadding} />
@@ -237,6 +236,8 @@ export function ColumnOptionsRow(props: ColumnOptionsRowProps) {
         >
           {children}
         </View>
+
+        <Separator horizontal />
       </ConditionalWrap>
     </SpringAnimatedView>
   )

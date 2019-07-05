@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef } from 'react'
-import { View } from 'react-native'
+import { Dimensions, View } from 'react-native'
 
 import {
   Column,
@@ -8,9 +8,7 @@ import {
   EnhancedLoadState,
   getDateSmallText,
   isItemRead,
-  Omit,
 } from '@devhub/core'
-import { useAppViewMode } from '../../hooks/use-app-view-mode'
 import useKeyPressCallback from '../../hooks/use-key-press-callback'
 import { useKeyboardScrolling } from '../../hooks/use-keyboard-scrolling'
 import { useReduxAction } from '../../hooks/use-redux-action'
@@ -18,29 +16,28 @@ import { bugsnag, ErrorBoundary } from '../../libs/bugsnag'
 import { FlatList, FlatListProps } from '../../libs/flatlist'
 import { Platform } from '../../libs/platform'
 import * as actions from '../../redux/actions'
-import { Button } from '../common/Button'
+import { sharedStyles } from '../../styles/shared'
+import { contentPadding } from '../../styles/variables'
+import { ColumnLoadingIndicator } from '../columns/ColumnLoadingIndicator'
+import { Button, defaultButtonSize } from '../common/Button'
 import { ButtonLink } from '../common/ButtonLink'
 import { fabSize } from '../common/FAB'
 import { RefreshControl } from '../common/RefreshControl'
 import { Spacer } from '../common/Spacer'
-import { useColumnFilters } from '../context/ColumnFiltersContext'
 import { useFocusedColumn } from '../context/ColumnFocusContext'
 import { useAppLayout } from '../context/LayoutContext'
-import { useTheme } from '../context/ThemeContext'
 import { fabSpacing, shouldRenderFAB } from '../layout/FABRenderer'
+import { CardsSearchHeader } from './CardsSearchHeader'
 import { EmptyCards, EmptyCardsProps } from './EmptyCards'
 import { EventCard, EventCardProps } from './EventCard'
-import { GenericMessageWithButtonView } from './GenericMessageWithButtonView'
-import {
-  CardItemSeparator,
-  getCardItemSeparatorThemeColor,
-} from './partials/CardItemSeparator'
+import { CardItemSeparator } from './partials/CardItemSeparator'
 import { SwipeableEventCard } from './SwipeableEventCard'
 
 export interface EventCardsProps
   extends Omit<EventCardProps, 'event' | 'isFocused'> {
   column: Column
   columnIndex: number
+  disableItemFocus: boolean
   errorMessage: EmptyCardsProps['errorMessage']
   fetchNextPage: (() => void) | undefined
   items: EnhancedGitHubEvent[]
@@ -62,6 +59,7 @@ export const EventCards = React.memo((props: EventCardsProps) => {
     column,
     columnIndex,
     enableCompactLabels,
+    disableItemFocus,
     errorMessage,
     fetchNextPage,
     items,
@@ -72,10 +70,6 @@ export const EventCards = React.memo((props: EventCardsProps) => {
   } = props
 
   const flatListRef = React.useRef<FlatList<EnhancedGitHubEvent>>(null)
-
-  const { appViewMode } = useAppViewMode()
-  const { inlineMode } = useColumnFilters()
-  const theme = useTheme()
 
   const visibleItemIndexesRef = useRef<number[]>([])
 
@@ -158,8 +152,10 @@ export const EventCards = React.memo((props: EventCardsProps) => {
     [],
   )
 
+  const isEmpty = !items.length
+
   const _renderItem: FlatListProps<EnhancedGitHubEvent>['renderItem'] = ({
-    item: item,
+    item,
   }) => {
     if (props.swipeable) {
       return (
@@ -169,7 +165,8 @@ export const EventCards = React.memo((props: EventCardsProps) => {
           event={item}
           isFocused={
             column.id === focusedColumnId &&
-            item.id === selectedItemIdRef.current
+            item.id === selectedItemIdRef.current &&
+            !disableItemFocus
           }
           repoIsKnown={props.repoIsKnown}
           swipeable={props.swipeable}
@@ -185,7 +182,8 @@ export const EventCards = React.memo((props: EventCardsProps) => {
           event={item}
           isFocused={
             column.id === focusedColumnId &&
-            item.id === selectedItemIdRef.current
+            item.id === selectedItemIdRef.current &&
+            !disableItemFocus
           }
           repoIsKnown={props.repoIsKnown}
           swipeable={props.swipeable}
@@ -202,31 +200,53 @@ export const EventCards = React.memo((props: EventCardsProps) => {
     props.repoIsKnown,
   ])
 
+  const renderHeader = useCallback(() => {
+    return (
+      <>
+        <CardsSearchHeader
+          key={`cards-search-header-column-${column.id}`}
+          columnId={column.id}
+        />
+
+        <ColumnLoadingIndicator columnId={column.id} />
+      </>
+    )
+  }, [column.id])
+
   const renderFooter = useCallback(() => {
     const { sizename } = useAppLayout()
 
     return (
       <>
-        <CardItemSeparator isRead />
+        {!isEmpty && <CardItemSeparator muted={!fetchNextPage} />}
 
         {fetchNextPage ? (
           <View>
             <Button
               analyticsLabel={loadState === 'error' ? 'try_again' : 'load_more'}
               children={loadState === 'error' ? 'Oops. Try again' : 'Load more'}
-              disabled={loadState !== 'loaded'}
-              loading={
-                loadState === 'loading_first' || loadState === 'loading_more'
+              disabled={
+                loadState === 'loading' ||
+                loadState === 'loading_first' ||
+                loadState === 'loading_more'
               }
+              loading={loadState === 'loading_more'}
               onPress={fetchNextPage}
               round={false}
             />
           </View>
         ) : column.filters && column.filters.clearedAt ? (
-          <View>
+          <View
+            style={{
+              paddingVertical: fabSpacing + (fabSize - defaultButtonSize) / 2,
+              paddingHorizontal:
+                cardViewMode === 'compact'
+                  ? contentPadding / 2
+                  : contentPadding,
+            }}
+          >
             <Button
               analyticsLabel="show_cleared"
-              borderOnly
               children="Show cleared items"
               onPress={() => {
                 setColumnClearedAtFilter({
@@ -236,17 +256,20 @@ export const EventCards = React.memo((props: EventCardsProps) => {
 
                 if (refresh) refresh()
               }}
-              round={false}
+              round
+              showBorder
+              transparent
             />
           </View>
         ) : null}
 
-        {shouldRenderFAB({ sizename }) && (
+        {!isEmpty && shouldRenderFAB({ sizename }) && (
           <Spacer height={fabSize + 2 * fabSpacing} />
         )}
       </>
     )
   }, [
+    isEmpty,
     fetchNextPage,
     loadState,
     column.id,
@@ -275,7 +298,7 @@ export const EventCards = React.memo((props: EventCardsProps) => {
       <RefreshControl
         intervalRefresh={lastFetchedAt}
         onRefresh={refresh}
-        refreshing={loadState === 'loading' || loadState === 'loading_first'}
+        refreshing={false}
         title={
           lastFetchedAt
             ? `Last updated ${getDateSmallText(lastFetchedAt, true)}`
@@ -283,25 +306,15 @@ export const EventCards = React.memo((props: EventCardsProps) => {
         }
       />
     ),
-    [lastFetchedAt, refresh, loadState],
+    [lastFetchedAt, refresh],
   )
 
-  const rerender = useMemo(() => ({}), [renderItem, renderFooter])
-
-  const contentContainerStyle = useMemo(
-    () => ({
-      borderWidth: appViewMode === 'single-column' && inlineMode ? 1 : 0,
-      borderColor:
-        theme[getCardItemSeparatorThemeColor(theme.backgroundColor, true)],
-    }),
-    [theme],
-  )
+  const rerender = useMemo(() => ({}), [renderItem, renderHeader, renderFooter])
 
   if (columnIndex && columnIndex >= constants.COLUMNS_LIMIT) {
     return (
       <EmptyCards
-        clearedAt={column.filters && column.filters.clearedAt}
-        columnId={column.id}
+        column={column}
         errorMessage={`You have reached the limit of ${
           constants.COLUMNS_LIMIT
         } columns. This is to maintain a healthy usage of the GitHub API.`}
@@ -313,33 +326,34 @@ export const EventCards = React.memo((props: EventCardsProps) => {
     )
   }
 
-  if (!(items && items.length)) {
-    if (errorMessage === 'Resource not accessible by integration') {
-      return (
-        <GenericMessageWithButtonView
-          buttonView={
-            !!refresh && (
-              <ButtonLink
-                analyticsLabel="open_private_issue"
-                children="Open GitHub Issue To Upvote"
-                disabled={loadState !== 'error'}
-                href="https://github.com/devhubapp/devhub/issues/140"
-                loading={loadState === 'loading'}
-              />
-            )
-          }
-          emoji="confused"
-          fullCenter
-          title="Private access temporarily disabled"
-          subtitle="GitHub has temporarily disabled private access for GitHub Apps on their API. Please upvote the issue below to show your interest on a fix."
-        />
-      )
-    }
-
+  if (isEmpty && errorMessage === 'Resource not accessible by integration') {
     return (
       <EmptyCards
-        clearedAt={column.filters && column.filters.clearedAt}
-        columnId={column.id}
+        column={column}
+        emoji="confused"
+        errorButtonView={
+          <ButtonLink
+            analyticsLabel="open_private_issue"
+            children="Open GitHub Issue To Upvote"
+            disabled={loadState !== 'error'}
+            href="https://github.com/devhubapp/devhub/issues/140"
+            loading={loadState === 'loading'}
+          />
+        }
+        errorTitle="Private access temporarily disabled"
+        errorMessage="GitHub has temporarily disabled private access for this specific API endpoint. Please upvote the issue below to show your interest on a fix."
+        fetchNextPage={undefined}
+        loadState={loadState}
+        refresh={refresh}
+      />
+    )
+  }
+
+  function renderEmptyComponent() {
+    return (
+      <EmptyCards
+        column={column}
+        disableLoadingIndicator
         errorMessage={errorMessage}
         fetchNextPage={fetchNextPage}
         loadState={loadState}
@@ -352,24 +366,30 @@ export const EventCards = React.memo((props: EventCardsProps) => {
     <FlatList
       ref={flatListRef}
       ItemSeparatorComponent={CardItemSeparator}
+      ListEmptyComponent={renderEmptyComponent}
       ListFooterComponent={renderFooter}
+      ListHeaderComponent={renderHeader}
       alwaysBounceVertical
       bounces
-      contentContainerStyle={contentContainerStyle}
+      contentContainerStyle={isEmpty && sharedStyles.flexGrow}
+      // contentOffset={{ x: 0, y: cardSearchTotalHeight }}
+      data-flatlist-with-header-content-container-full-height-fix={isEmpty}
       data={items}
       disableVirtualization={Platform.OS === 'web'}
       extraData={rerender}
-      initialNumToRender={15}
+      initialNumToRender={Math.ceil(Dimensions.get('window').height / 80)}
       keyExtractor={keyExtractor}
-      maxToRenderPerBatch={3}
       onScrollToIndexFailed={onScrollToIndexFailed}
       onViewableItemsChanged={handleViewableItemsChanged}
       pointerEvents={pointerEvents}
       refreshControl={refreshControl}
       removeClippedSubviews={Platform.OS !== 'web'}
       renderItem={renderItem}
+      stickyHeaderIndices={[0]}
       viewabilityConfig={viewabilityConfig}
       windowSize={2}
     />
   )
 })
+
+EventCards.displayName = 'EventCards'

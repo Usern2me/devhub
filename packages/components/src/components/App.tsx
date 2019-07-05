@@ -7,15 +7,16 @@ import '../libs/analytics'
 import { HelmetProvider } from '../libs/helmet'
 import { AppNavigator } from '../navigation/AppNavigator'
 import { enableNetworkInterceptors } from '../network-interceptor'
-import { ReduxStoreProvider } from '../redux/context/ReduxStoreContext'
 import { configureStore } from '../redux/store'
 import { AppGlobalStyles } from './AppGlobalStyles'
+import { AppIconBadge } from './common/AppIconBadge'
 import { ColumnFiltersProvider } from './context/ColumnFiltersContext'
 import { ColumnFocusProvider } from './context/ColumnFocusContext'
 import { ColumnWidthProvider } from './context/ColumnWidthContext'
-import { DimensionsProvider } from './context/DimensionsContext'
+import { DeepLinkProvider } from './context/DeepLinkContext'
 import { AppLayoutProvider } from './context/LayoutContext'
 import { SpringAnimatedThemeProvider } from './context/SpringAnimatedThemeContext'
+import { UnreadCountProvider } from './context/UnreadCountContext'
 
 enableNetworkInterceptors()
 
@@ -28,26 +29,28 @@ export function App() {
     // <StrictMode>
     <HelmetProvider>
       <ReduxProvider store={store}>
-        <ReduxStoreProvider>
-          <PersistGate loading={null} persistor={persistor}>
-            <DimensionsProvider>
-              <AppLayoutProvider>
-                <ColumnFocusProvider>
-                  <ColumnFiltersProvider>
-                    <ColumnWidthProvider>
-                      <SpringAnimatedThemeProvider>
-                        <>
-                          <AppGlobalStyles key="app-global-styles" />
-                          <AppNavigator key="app-navigator" />
-                        </>
-                      </SpringAnimatedThemeProvider>
-                    </ColumnWidthProvider>
-                  </ColumnFiltersProvider>
-                </ColumnFocusProvider>
-              </AppLayoutProvider>
-            </DimensionsProvider>
-          </PersistGate>
-        </ReduxStoreProvider>
+        <PersistGate loading={null} persistor={persistor}>
+          <DeepLinkProvider>
+            <AppLayoutProvider>
+              <ColumnFocusProvider>
+                <ColumnFiltersProvider>
+                  <ColumnWidthProvider>
+                    <SpringAnimatedThemeProvider>
+                      <>
+                        <AppGlobalStyles key="app-global-styles" />
+                        <AppNavigator key="app-navigator" />
+
+                        <UnreadCountProvider>
+                          <AppIconBadge />
+                        </UnreadCountProvider>
+                      </>
+                    </SpringAnimatedThemeProvider>
+                  </ColumnWidthProvider>
+                </ColumnFiltersProvider>
+              </ColumnFocusProvider>
+            </AppLayoutProvider>
+          </DeepLinkProvider>
+        </PersistGate>
       </ReduxProvider>
     </HelmetProvider>
     // </StrictMode>

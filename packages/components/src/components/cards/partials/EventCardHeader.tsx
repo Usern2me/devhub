@@ -20,13 +20,14 @@ import { ThemedView } from '../../themed/ThemedView'
 import { cardStyles } from '../styles'
 
 export interface EventCardHeaderProps {
-  actionText: string
+  ActionTextComponent: React.ReactNode
   avatarUrl: string
+  bold: boolean
   date: MomentInput
   ids: Array<string | number>
   isBot: boolean
   isPrivate?: boolean
-  isRead: boolean
+  muted: boolean
   smallLeftColumn?: boolean
   userLinkURL: string
   username: string
@@ -53,13 +54,14 @@ const styles = StyleSheet.create({
 
 export function EventCardHeader(props: EventCardHeaderProps) {
   const {
-    actionText,
+    ActionTextComponent,
     avatarUrl,
+    bold,
     date,
     ids,
     isBot,
     isPrivate,
-    isRead,
+    muted,
     smallLeftColumn,
     userLinkURL: _userLinkURL,
     username: _username,
@@ -85,6 +87,7 @@ export function EventCardHeader(props: EventCardHeaderProps) {
           avatarUrl={avatarUrl}
           isBot={isBot}
           linkURL={userLinkURL}
+          muted={muted}
           shape={isBot ? undefined : 'circle'}
           small={smallLeftColumn}
           style={cardStyles.avatar}
@@ -99,12 +102,11 @@ export function EventCardHeader(props: EventCardHeaderProps) {
               <Link
                 href={userLinkURL}
                 textProps={{
-                  color: isRead ? 'foregroundColorMuted60' : 'foregroundColor',
-                  // color: 'foregroundColor',
+                  color: muted ? 'foregroundColorMuted60' : 'foregroundColor',
                   numberOfLines: 1,
                   style: [
                     cardStyles.usernameText,
-                    // isRead && { fontWeight: undefined },
+                    bold && cardStyles.boldText,
                     { lineHeight: undefined },
                   ],
                 }}
@@ -131,13 +133,7 @@ export function EventCardHeader(props: EventCardHeaderProps) {
 
             <Spacer height={2} />
 
-            <ThemedText
-              color={isRead ? 'foregroundColorMuted60' : 'foregroundColor'}
-              numberOfLines={1}
-              style={cardStyles.headerActionText}
-            >
-              {actionText.toLowerCase()}
-            </ThemedText>
+            {ActionTextComponent}
           </View>
 
           <View
@@ -166,7 +162,7 @@ export function EventCardHeader(props: EventCardHeaderProps) {
                     <Text children="  " />
                     <ThemedText
                       color={
-                        isRead
+                        muted
                           ? 'foregroundColorMuted40'
                           : 'foregroundColorMuted60'
                       }

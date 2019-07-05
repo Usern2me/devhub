@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { getGitHubURLForRepo, getGitHubURLForUser, Omit } from '@devhub/core'
+import { getGitHubURLForRepo, getGitHubURLForUser } from '@devhub/core'
 import { sharedStyles } from '../../../../styles/shared'
 import { contentPadding } from '../../../../styles/variables'
 import { Avatar } from '../../../common/Avatar'
@@ -15,10 +15,9 @@ export interface RepositoryRowProps
   isForcePush?: boolean
   isFork?: boolean
   isPush?: boolean
-  isRead: boolean
+  muted: boolean
   ownerName: string
   repositoryName: string
-  showMoreItemsIndicator?: boolean
   small?: boolean
 }
 
@@ -30,11 +29,10 @@ export const RepositoryRow = React.memo((props: RepositoryRowProps) => {
     // isForcePush,
     // isFork,
     // isPush,
-    isRead,
+    muted,
     ownerName,
     repositoryName,
     rightContainerStyle,
-    showMoreItemsIndicator,
     small,
     ...otherProps
   } = props
@@ -54,6 +52,7 @@ export const RepositoryRow = React.memo((props: RepositoryRowProps) => {
         <Avatar
           isBot={isBot}
           linkURL=""
+          muted={muted}
           small
           style={cardStyles.avatar}
           username={ownerName}
@@ -67,14 +66,9 @@ export const RepositoryRow = React.memo((props: RepositoryRowProps) => {
       right={
         <>
           <Link
-            href={
-              showMoreItemsIndicator
-                ? undefined
-                : getGitHubURLForRepo(ownerName, repositoryName)
-            }
+            href={getGitHubURLForRepo(ownerName, repositoryName)}
             textProps={{
-              color: isRead ? 'foregroundColorMuted60' : 'foregroundColor',
-              // color: 'foregroundColor',
+              color: muted ? 'foregroundColorMuted60' : 'foregroundColor',
               numberOfLines: hideOwner ? 2 : 1,
               style: [cardStyles.normalText, small && cardStyles.smallText],
             }}
@@ -87,7 +81,7 @@ export const RepositoryRow = React.memo((props: RepositoryRowProps) => {
                 cardStyles.icon,
               ]}
             />{' '} */}
-            {showMoreItemsIndicator ? '' : repositoryName}
+            {repositoryName}
           </Link>
 
           {!!(ownerName && !hideOwner) && (
@@ -95,18 +89,14 @@ export const RepositoryRow = React.memo((props: RepositoryRowProps) => {
               {!!repositoryName && <Spacer width={contentPadding / 3} />}
 
               <Link
-                href={
-                  showMoreItemsIndicator
-                    ? undefined
-                    : getGitHubURLForUser(ownerName)
-                }
+                href={getGitHubURLForUser(ownerName)}
                 textProps={{
                   color: 'foregroundColorMuted60',
                   numberOfLines: 1,
                   style: [cardStyles.normalText, small && cardStyles.smallText],
                 }}
               >
-                {showMoreItemsIndicator ? '...' : ownerName}
+                {ownerName}
               </Link>
             </>
           )}
@@ -115,3 +105,5 @@ export const RepositoryRow = React.memo((props: RepositoryRowProps) => {
     />
   )
 })
+
+RepositoryRow.displayName = 'RepositoryRow'

@@ -1,4 +1,3 @@
-import { Omit } from '@devhub/core'
 import { OcticonIconProps, Octicons as Icon } from '../../../libs/vector-icons'
 import { createSpringAnimatedComponent } from './helpers'
 
@@ -10,3 +9,4 @@ export const SpringAnimatedIcon = (createSpringAnimatedComponent(
 ) as unknown) as React.ForwardRefExoticComponent<
   SpringAnimatedIconProps & React.RefAttributes<Icon>
 >
+;(SpringAnimatedIcon as any).displayName = 'SpringAnimatedIcon'

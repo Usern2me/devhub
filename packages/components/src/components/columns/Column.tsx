@@ -1,6 +1,7 @@
 import React, { ReactNode, useRef } from 'react'
 import { StyleProp, StyleSheet, View, ViewProps, ViewStyle } from 'react-native'
 
+import { ThemeColors } from '@devhub/core'
 import { useEmitter } from '../../hooks/use-emitter'
 import { Platform } from '../../libs/platform'
 import { sharedStyles } from '../../styles/shared'
@@ -8,29 +9,34 @@ import { contentPadding } from '../../styles/variables'
 import { tryFocus } from '../../utils/helpers/shared'
 import { separatorThickSize } from '../common/Separator'
 import { useColumnWidth } from '../context/ColumnWidthContext'
-import { useAppLayout } from '../context/LayoutContext'
 import { ThemedView } from '../themed/ThemedView'
 import { ColumnSeparator } from './ColumnSeparator'
 
 export const columnMargin = contentPadding / 2
 
 export interface ColumnProps extends ViewProps {
+  backgroundColor?:
+    | keyof ThemeColors
+    | ((theme: ThemeColors) => string | undefined)
   children?: ReactNode
   columnId: string
   fullWidth?: boolean
   pagingEnabled?: boolean
-  renderSideSeparators?: boolean
+  renderLeftSeparator?: boolean
+  renderRightSeparator?: boolean
   style?: StyleProp<ViewStyle>
 }
 
 export const Column = React.memo(
   React.forwardRef((props: ColumnProps, ref) => {
     const {
+      backgroundColor = 'backgroundColor',
       children,
       columnId,
       fullWidth,
       pagingEnabled,
-      renderSideSeparators,
+      renderLeftSeparator,
+      renderRightSeparator,
       style,
       ...otherProps
     } = props
@@ -40,7 +46,6 @@ export const Column = React.memo(
 
     const columnBorderRef = useRef<View>(null)
 
-    const { sizename } = useAppLayout()
     const columnWidth = useColumnWidth()
 
     useEmitter(
@@ -62,7 +67,20 @@ export const Column = React.memo(
         }
 
         if (Platform.OS === 'web' && columnRef.current) {
-          tryFocus(columnRef.current)
+          const currentFocusedNodeTag =
+            typeof document !== 'undefined' &&
+            document &&
+            document.activeElement &&
+            document.activeElement.tagName
+
+          if (
+            !(
+              currentFocusedNodeTag &&
+              currentFocusedNodeTag.toLowerCase() === 'input'
+            )
+          ) {
+            tryFocus(columnRef.current)
+          }
         }
       },
     )
@@ -72,7 +90,7 @@ export const Column = React.memo(
         {...otherProps}
         ref={columnRef}
         key={`column-${columnId}-inner`}
-        backgroundColor="backgroundColor"
+        backgroundColor={backgroundColor}
         style={[
           sharedStyles.horizontal,
           {
@@ -83,21 +101,9 @@ export const Column = React.memo(
           style,
         ]}
       >
-        {!!renderSideSeparators && (
-          <ColumnSeparator
-            half
-            horizontal={false}
-            thick={sizename > '1-small'}
-          />
-        )}
+        {!!renderLeftSeparator && <ColumnSeparator half />}
         <View style={sharedStyles.flex}>{children}</View>
-        {!!renderSideSeparators && (
-          <ColumnSeparator
-            half
-            horizontal={false}
-            thick={sizename > '1-small'}
-          />
-        )}
+        {!!renderRightSeparator && <ColumnSeparator half />}
 
         <ThemedView
           ref={columnBorderRef}
@@ -119,3 +125,5 @@ export const Column = React.memo(
     )
   }),
 )
+
+Column.displayName = 'Column'

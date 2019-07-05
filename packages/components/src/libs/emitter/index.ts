@@ -4,6 +4,7 @@ export type EventEmitter = EventEmitter
 export type EventSubscription = EventSubscription
 
 export interface EmitterTypes {
+  DEEP_LINK: { url: string }
   FOCUS_ON_COLUMN: {
     animated?: boolean
     columnId: string
@@ -39,6 +40,7 @@ export const emitter = {
     return _emitter.addListener(key, listener)
   },
   emit<K extends keyof EmitterTypes>(key: K, payload: EmitterTypes[K]) {
+    if (__DEV__) console.debug('[EMITTER]', key, payload) // tslint:disable-line no-console
     _emitter.emit(key, payload)
   },
 }

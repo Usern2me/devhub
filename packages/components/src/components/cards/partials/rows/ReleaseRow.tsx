@@ -1,11 +1,7 @@
 import React from 'react'
 import { View } from 'react-native'
 
-import {
-  getGitHubURLForRelease,
-  Omit,
-  trimNewLinesAndSpaces,
-} from '@devhub/core'
+import { getGitHubURLForRelease, trimNewLinesAndSpaces } from '@devhub/core'
 import { smallAvatarSize } from '../../../../styles/variables'
 import { fixURL } from '../../../../utils/helpers/github/url'
 import { Avatar } from '../../../common/Avatar'
@@ -28,7 +24,7 @@ export interface ReleaseRowProps
   branch?: string
   hideIcon?: boolean
   isPrivate: boolean
-  isRead: boolean
+  muted: boolean
   name: string | undefined
   ownerName: string
   repositoryName: string
@@ -48,7 +44,7 @@ export const ReleaseRow = React.memo((props: ReleaseRowProps) => {
     branch,
     hideIcon,
     isPrivate,
-    isRead,
+    muted,
     name: _name,
     ownerName,
     repositoryName,
@@ -78,7 +74,7 @@ export const ReleaseRow = React.memo((props: ReleaseRowProps) => {
           {...otherProps}
           branch={branch}
           isBranchMainEvent={false}
-          isRead={isRead}
+          muted={muted}
           ownerName={ownerName || ''}
           repositoryName={repositoryName || ''}
           viewMode={viewMode}
@@ -93,6 +89,7 @@ export const ReleaseRow = React.memo((props: ReleaseRowProps) => {
               <Avatar
                 isBot={Boolean(ownerName && ownerName.indexOf('[bot]') >= 0)}
                 linkURL=""
+                muted={muted}
                 small
                 style={cardStyles.avatar}
                 username={ownerName}
@@ -107,14 +104,9 @@ export const ReleaseRow = React.memo((props: ReleaseRowProps) => {
                 enableTextWrapper
                 href={fixedURL}
                 textProps={{
-                  color: isRead ? 'foregroundColorMuted60' : 'foregroundColor',
-                  // color: 'foregroundColor',
+                  color: muted ? 'foregroundColorMuted60' : 'foregroundColor',
                   numberOfLines: 1,
-                  style: [
-                    cardStyles.normalText,
-                    bold && cardStyles.boldText,
-                    // isRead && { fontWeight: undefined },
-                  ],
+                  style: [cardStyles.normalText, bold && cardStyles.boldText],
                 }}
               >
                 <>
@@ -141,7 +133,7 @@ export const ReleaseRow = React.memo((props: ReleaseRowProps) => {
         <CommentRow
           avatarUrl={avatarUrl}
           body={body}
-          isRead={isRead}
+          muted={muted}
           leftContent="avatar"
           url={fixedURL}
           userLinkURL={userLinkURL}
@@ -153,3 +145,5 @@ export const ReleaseRow = React.memo((props: ReleaseRowProps) => {
     </View>
   )
 })
+
+ReleaseRow.displayName = 'ReleaseRow'

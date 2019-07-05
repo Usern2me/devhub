@@ -1,6 +1,5 @@
 import React from 'react'
 
-import { Omit } from '@devhub/core'
 import { Browser } from '../../libs/browser'
 import { Linking } from '../../libs/linking'
 import { Platform } from '../../libs/platform'
@@ -44,3 +43,5 @@ export const ButtonLink = React.memo((props: ButtonLinkProps) => {
     />
   )
 })
+
+ButtonLink.displayName = 'ButtonLink'

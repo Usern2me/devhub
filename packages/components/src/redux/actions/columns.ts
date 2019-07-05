@@ -58,6 +58,13 @@ export function clearColumnFilters(payload: { columnId: string }) {
   return createAction('CLEAR_COLUMN_FILTERS', payload)
 }
 
+export function replaceColumnFilters(payload: {
+  columnId: string
+  filters: ColumnFilters
+}) {
+  return createAction('REPLACE_COLUMN_FILTERS', payload)
+}
+
 export function setColumnSavedFilter(payload: {
   columnId: string
   saved?: boolean | null
@@ -93,6 +100,13 @@ export function setColummStateTypeFilter<T extends GitHubStateType>(payload: {
   return createAction('SET_COLUMN_STATE_FILTER', payload)
 }
 
+export function setColummBotFilter(payload: {
+  columnId: string
+  bot: ColumnFilters['bot']
+}) {
+  return createAction('SET_COLUMN_BOT_FILTER', payload)
+}
+
 export function setColummDraftFilter(payload: {
   columnId: string
   draft: ColumnFilters['draft']
@@ -114,6 +128,14 @@ export function setColumnUnreadFilter(payload: {
   unread: NotificationColumnFilters['unread']
 }) {
   return createAction('SET_COLUMN_UNREAD_FILTER', payload)
+}
+
+export function setColumnInvolvesFilter(payload: {
+  columnId: string
+  user: string
+  value: boolean | null
+}) {
+  return createAction('SET_COLUMN_INVOLVES_FILTER', payload)
 }
 
 export function setColumnOwnerFilter(payload: {

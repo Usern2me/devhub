@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { getColumnHeaderDetails, Omit } from '@devhub/core'
+import { getColumnHeaderDetails } from '@devhub/core'
 import {
   EventCardsContainer,
   EventCardsContainerProps,
@@ -10,7 +10,7 @@ import { ColumnRenderer } from './ColumnRenderer'
 export interface EventColumnProps
   extends Omit<
     EventCardsContainerProps,
-    'cardViewMode' | 'enableCompactLabels' | 'repoIsKnown'
+    'cardViewMode' | 'disableItemFocus' | 'enableCompactLabels' | 'repoIsKnown'
   > {
   columnIndex: number
   disableColumnOptions?: boolean
@@ -37,6 +37,7 @@ export const EventColumn = React.memo((props: EventColumnProps) => {
         headerDetails.avatarProps && headerDetails.avatarProps.username
       }
       column={column}
+      columnIndex={columnIndex}
       disableColumnOptions={disableColumnOptions}
       icon={headerDetails.icon}
       owner={headerDetails.owner}
@@ -46,16 +47,19 @@ export const EventColumn = React.memo((props: EventColumnProps) => {
       subtitle={headerDetails.subtitle}
       title={headerDetails.title}
     >
-      {({ cardViewMode, enableCompactLabels }) => (
+      {({ cardViewMode, enableCompactLabels, disableItemFocus }) => (
         <EventCardsContainer
           {...props}
           key={`event-cards-container-${column.id}`}
           cardViewMode={cardViewMode}
           columnIndex={columnIndex}
           enableCompactLabels={enableCompactLabels}
+          disableItemFocus={disableItemFocus}
           repoIsKnown={headerDetails.repoIsKnown}
         />
       )}
     </ColumnRenderer>
   )
 })
+
+EventColumn.displayName = 'EventColumn'
